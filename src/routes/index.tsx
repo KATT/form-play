@@ -59,7 +59,7 @@ const currencies = ['USD', 'EUR', 'GBP'] as const
 const billStatuses = ['draft', 'scheduled', 'sent', 'paid'] as const
 const editorModes = ['new', 'api'] as const
 const apiSubmitIntents = ['create', 'update'] as const
-const recurrenceFrequencies = ['daily', 'monthly', 'yearly'] as const
+const recurrenceFrequencies = ['daily', 'weekly', 'monthly', 'yearly'] as const
 const recurrenceEndStrategies = [
   'never',
   'on_date',
@@ -104,43 +104,36 @@ const lineItemSchema = z.object({
   taxable: z.boolean(),
 })
 
+const recurrenceBaseSchema = z.object({
+  interval: z.number().min(1, 'Repeat interval must be at least 1'),
+  startsOn: z.string().min(1, 'Choose a start date'),
+  endStrategy: z.enum(recurrenceEndStrategies),
+  endsOn: z.string().optional(),
+  occurrenceCount: z.number().optional(),
+})
+
+const weekdayRecurrenceSchema = recurrenceBaseSchema.extend({
+  frequency: z.enum(['daily', 'weekly']),
+  weekdays: z.array(z.enum(weekdays)).min(1, 'Choose at least 1 weekday'),
+})
+
+const monthlyRecurrenceSchema = recurrenceBaseSchema.extend({
+  frequency: z.literal('monthly'),
+  monthlyAnchorDate: z.string().min(1, 'Choose a monthly anchor date'),
+})
+
+const yearlyRecurrenceSchema = recurrenceBaseSchema.extend({
+  frequency: z.literal('yearly'),
+  yearlyAnchorDate: z.string().min(1, 'Choose a yearly anchor date'),
+})
+
 const recurrenceSchema = z
-  .object({
-    frequency: z.enum(recurrenceFrequencies),
-    interval: z.number().min(1, 'Repeat interval must be at least 1'),
-    startsOn: z.string().min(1, 'Choose a start date'),
-    weekdays: z.array(z.enum(weekdays)),
-    monthlyAnchorDate: z.string().optional(),
-    yearlyAnchorDate: z.string().optional(),
-    endStrategy: z.enum(recurrenceEndStrategies),
-    endsOn: z.string().optional(),
-    occurrenceCount: z.number().optional(),
-  })
+  .discriminatedUnion('frequency', [
+    weekdayRecurrenceSchema,
+    monthlyRecurrenceSchema,
+    yearlyRecurrenceSchema,
+  ])
   .superRefine((recurrence, ctx) => {
-    if (recurrence.frequency === 'daily' && recurrence.weekdays.length === 0) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['weekdays'],
-        message: 'Choose at least 1 weekday',
-      })
-    }
-
-    if (recurrence.frequency === 'monthly' && !recurrence.monthlyAnchorDate) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['monthlyAnchorDate'],
-        message: 'Choose a monthly anchor date',
-      })
-    }
-
-    if (recurrence.frequency === 'yearly' && !recurrence.yearlyAnchorDate) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['yearlyAnchorDate'],
-        message: 'Choose a yearly anchor date',
-      })
-    }
-
     if (recurrence.endStrategy === 'on_date' && !recurrence.endsOn) {
       ctx.addIssue({
         code: 'custom',
@@ -413,7 +406,7 @@ function BillTypeSection({ form }: { form: BillForm }) {
           />
           <ChoiceCard
             active={billType === 'repeating'}
-            description="Generate future bills on a daily, monthly, or yearly cadence."
+            description="Generate future bills on a daily, weekly, monthly, or yearly cadence."
             title="Repeating"
             onClick={() => {
               form.setValue('billType', 'repeating', {
@@ -504,10 +497,10 @@ function RecurrenceFrequencyFields({
       <FormConditional
         control={form.control}
         name="recurrence.frequency"
-        render={(frequency) => frequency === 'daily'}
+        render={(frequency) => frequency === 'daily' || frequency === 'weekly'}
       >
         <WeekdayPicker
-          error={form.formState.errors.recurrence?.weekdays?.message}
+          error={getRecurrenceError(form, 'weekdays')}
           selectedWeekdays={weekdaysValue}
           onChange={(nextWeekdays) =>
             form.setValue('recurrence.weekdays', nextWeekdays, {
@@ -523,7 +516,7 @@ function RecurrenceFrequencyFields({
         render={(frequency) => frequency === 'monthly'}
       >
         <TextInput
-          error={form.formState.errors.recurrence?.monthlyAnchorDate?.message}
+          error={getRecurrenceError(form, 'monthlyAnchorDate')}
           label="Monthly anchor date"
           type="date"
           {...form.register('recurrence.monthlyAnchorDate')}
@@ -539,7 +532,7 @@ function RecurrenceFrequencyFields({
         render={(frequency) => frequency === 'yearly'}
       >
         <TextInput
-          error={form.formState.errors.recurrence?.yearlyAnchorDate?.message}
+          error={getRecurrenceError(form, 'yearlyAnchorDate')}
           label="Yearly anchor date"
           type="date"
           {...form.register('recurrence.yearlyAnchorDate')}
@@ -818,6 +811,14 @@ function FormConditional<
   return render(value) ? <>{children}</> : null
 }
 
+function getRecurrenceError(form: BillForm, name: string) {
+  const recurrenceErrors = form.formState.errors.recurrence as
+    | Record<string, { message?: string } | undefined>
+    | undefined
+
+  return recurrenceErrors?.[name]?.message
+}
+
 function TextInput({
   error,
   id,
@@ -941,7 +942,7 @@ function WeekdayPicker({
         ))}
       </FieldGroup>
       <FieldDescription>
-        Use weekdays to model daily billing rules like every business day.
+        Choose which weekdays should generate an occurrence.
       </FieldDescription>
       <FieldError>{error}</FieldError>
     </Field>
@@ -1064,7 +1065,6 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
       frequency: apiBill.schedule.frequency,
       interval: apiBill.schedule.interval,
       startsOn: apiBill.schedule.starts_on,
-      weekdays: [] as ApiWeekday[],
       monthlyAnchorDate: '',
       yearlyAnchorDate: '',
       endStrategy,
@@ -1077,10 +1077,11 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
       billType: 'repeating',
       dueDate: apiBill.due_date ?? undefined,
       recurrence:
-        apiBill.schedule.frequency === 'daily'
+        apiBill.schedule.frequency === 'daily' ||
+        apiBill.schedule.frequency === 'weekly'
           ? {
               ...baseRecurrence,
-              frequency: 'daily',
+              frequency: apiBill.schedule.frequency,
               weekdays: apiBill.schedule.weekdays,
             }
           : apiBill.schedule.frequency === 'monthly'
@@ -1122,9 +1123,7 @@ function getDefaultRecurrence(): NonNullable<BillFormValues['recurrence']> {
     frequency: 'monthly',
     interval: 1,
     startsOn: '2026-07-01',
-    weekdays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
     monthlyAnchorDate: '2026-07-31',
-    yearlyAnchorDate: '2026-07-31',
     endStrategy: 'never',
     endsOn: '',
     occurrenceCount: undefined,
@@ -1213,41 +1212,43 @@ function getApiSchedule(recurrence: NonNullable<BillFormValues['recurrence']>) {
         : null,
   }
 
-  if (recurrence.frequency === 'daily') {
-    return {
-      ...end,
-      frequency: 'daily' as const,
-      interval: recurrence.interval,
-      starts_on: recurrence.startsOn,
-      weekdays: recurrence.weekdays,
+  switch (recurrence.frequency) {
+    case 'daily':
+    case 'weekly':
+      return {
+        ...end,
+        frequency: recurrence.frequency,
+        interval: recurrence.interval,
+        starts_on: recurrence.startsOn,
+        weekdays: recurrence.weekdays,
+      }
+    case 'monthly': {
+      const anchorDate = recurrence.monthlyAnchorDate
+
+      return {
+        ...end,
+        frequency: 'monthly' as const,
+        interval: recurrence.interval,
+        starts_on: recurrence.startsOn,
+        anchor_date: anchorDate,
+        day_of_month: getDateDay(anchorDate),
+        day_overflow: 'last_day' as const,
+      }
     }
-  }
+    case 'yearly': {
+      const anchorDate = recurrence.yearlyAnchorDate
 
-  if (recurrence.frequency === 'monthly') {
-    const anchorDate = recurrence.monthlyAnchorDate ?? recurrence.startsOn
-
-    return {
-      ...end,
-      frequency: 'monthly' as const,
-      interval: recurrence.interval,
-      starts_on: recurrence.startsOn,
-      anchor_date: anchorDate,
-      day_of_month: getDateDay(anchorDate),
-      day_overflow: 'last_day' as const,
+      return {
+        ...end,
+        frequency: 'yearly' as const,
+        interval: recurrence.interval,
+        starts_on: recurrence.startsOn,
+        anchor_date: anchorDate,
+        month: getDateMonth(anchorDate),
+        day: getDateDay(anchorDate),
+        day_overflow: 'last_day' as const,
+      }
     }
-  }
-
-  const anchorDate = recurrence.yearlyAnchorDate ?? recurrence.startsOn
-
-  return {
-    ...end,
-    frequency: 'yearly' as const,
-    interval: recurrence.interval,
-    starts_on: recurrence.startsOn,
-    anchor_date: anchorDate,
-    month: getDateMonth(anchorDate),
-    day: getDateDay(anchorDate),
-    day_overflow: 'last_day' as const,
   }
 }
 

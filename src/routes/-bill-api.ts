@@ -1,7 +1,7 @@
 export type ApiBillKind = 'one_off' | 'repeating'
 export type ApiBillStatus = 'draft' | 'scheduled' | 'sent' | 'paid'
 export type ApiCurrency = 'USD' | 'EUR' | 'GBP'
-export type ApiRecurrenceFrequency = 'daily' | 'monthly' | 'yearly'
+export type ApiRecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
 export type ApiWeekday =
   | 'monday'
   | 'tuesday'
@@ -17,6 +17,12 @@ export type ApiScheduleEnd = {
 }
 export type ApiDailySchedule = ApiScheduleEnd & {
   frequency: 'daily'
+  interval: number
+  starts_on: string
+  weekdays: ApiWeekday[]
+}
+export type ApiWeeklySchedule = ApiScheduleEnd & {
+  frequency: 'weekly'
   interval: number
   starts_on: string
   weekdays: ApiWeekday[]
@@ -40,6 +46,7 @@ export type ApiYearlySchedule = ApiScheduleEnd & {
 }
 export type ApiBillSchedule =
   | ApiDailySchedule
+  | ApiWeeklySchedule
   | ApiMonthlySchedule
   | ApiYearlySchedule
 
