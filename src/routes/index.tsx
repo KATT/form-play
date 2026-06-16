@@ -4,8 +4,8 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
 import {
-  apiBillPayloadSchema,
   sampleApiBill,
+  type ApiBill,
   type ApiBillPayload,
   type ApiSubmission,
 } from './-bill-api'
@@ -99,94 +99,6 @@ const billFormSchema = z.discriminatedUnion('billType', [
 
 type BillFormValues = z.infer<typeof billFormSchema>
 
-const billFormCodec = z.codec(apiBillPayloadSchema, billFormSchema, {
-  decode: (apiBill): BillFormValues => {
-    const baseDefaults = {
-      editorMode: 'api' as const,
-      submitIntent: 'update' as const,
-      customerName: apiBill.customer.name,
-      customerEmail: apiBill.customer.email,
-      status: apiBill.status,
-      issueDate: apiBill.issue_date,
-      currency: apiBill.currency,
-      lineItems: apiBill.line_items.map((item) => ({
-        id: item.id,
-        description: item.description,
-        quantity: item.quantity,
-        unitPrice: centsToDollars(item.unit_amount_cents),
-        taxable: item.taxable,
-      })),
-      taxRate: apiBill.tax_rate_bps / 100,
-      collectPaymentAutomatically: apiBill.auto_collect,
-      memo: apiBill.memo ?? '',
-    }
-
-    if (apiBill.kind === 'repeating' && apiBill.schedule) {
-      return {
-        ...baseDefaults,
-        billType: 'repeating',
-        dueDate: apiBill.due_date ?? undefined,
-        recurrence: {
-          frequency: apiBill.schedule.frequency,
-          interval: apiBill.schedule.interval,
-          startsOn: apiBill.schedule.starts_on,
-          endStrategy: apiBill.schedule.ends_on
-            ? 'on_date'
-            : apiBill.schedule.max_occurrences
-              ? 'after_occurrences'
-              : 'never',
-          endsOn: apiBill.schedule.ends_on ?? '',
-          occurrenceCount: apiBill.schedule.max_occurrences ?? undefined,
-        },
-      }
-    }
-
-    return {
-      ...baseDefaults,
-      billType: 'one_off',
-      dueDate: apiBill.due_date ?? apiBill.issue_date,
-      recurrence: getDefaultRecurrence(),
-    }
-  },
-  encode: (values): ApiBillPayload => ({
-    kind: values.billType,
-    customer: {
-      name: values.customerName,
-      email: values.customerEmail,
-    },
-    status: values.status,
-    issue_date: values.issueDate,
-    due_date: values.billType === 'one_off' ? values.dueDate : null,
-    currency: values.currency,
-    line_items: values.lineItems.map((item) => ({
-      id: item.id,
-      description: item.description,
-      quantity: item.quantity,
-      unit_amount_cents: dollarsToCents(item.unitPrice),
-      taxable: item.taxable,
-    })),
-    tax_rate_bps: Math.round(values.taxRate * 100),
-    auto_collect: values.collectPaymentAutomatically,
-    memo: values.memo || null,
-    schedule:
-      values.billType === 'repeating'
-        ? {
-            frequency: values.recurrence.frequency,
-            interval: values.recurrence.interval,
-            starts_on: values.recurrence.startsOn,
-            ends_on:
-              values.recurrence.endStrategy === 'on_date'
-                ? (values.recurrence.endsOn ?? null)
-                : null,
-            max_occurrences:
-              values.recurrence.endStrategy === 'after_occurrences'
-                ? (values.recurrence.occurrenceCount ?? null)
-                : null,
-          }
-        : null,
-  }),
-})
-
 function Home() {
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-100">
@@ -220,7 +132,7 @@ function Home() {
             title="Edit an existing bill"
           >
             <UpsertBillForm
-              defaultValues={z.decode(billFormCodec, sampleApiBill)}
+              defaultValues={getBillDefaultsFromApi(sampleApiBill)}
               sourceTitle="API bill response"
               sourceValue={sampleApiBill}
             />
@@ -705,6 +617,55 @@ function getNewBillDefaults(): BillFormValues {
   }
 }
 
+function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
+  const baseDefaults = {
+    editorMode: 'api' as const,
+    submitIntent: 'update' as const,
+    customerName: apiBill.customer.name,
+    customerEmail: apiBill.customer.email,
+    status: apiBill.status,
+    issueDate: apiBill.issue_date,
+    currency: apiBill.currency,
+    lineItems: apiBill.line_items.map((item) => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: centsToDollars(item.unit_amount_cents),
+      taxable: item.taxable,
+    })),
+    taxRate: apiBill.tax_rate_bps / 100,
+    collectPaymentAutomatically: apiBill.auto_collect,
+    memo: apiBill.memo ?? '',
+  }
+
+  if (apiBill.kind === 'repeating' && apiBill.schedule) {
+    return {
+      ...baseDefaults,
+      billType: 'repeating',
+      dueDate: apiBill.due_date ?? undefined,
+      recurrence: {
+        frequency: apiBill.schedule.frequency,
+        interval: apiBill.schedule.interval,
+        startsOn: apiBill.schedule.starts_on,
+        endStrategy: apiBill.schedule.ends_on
+          ? 'on_date'
+          : apiBill.schedule.max_occurrences
+            ? 'after_occurrences'
+            : 'never',
+        endsOn: apiBill.schedule.ends_on ?? '',
+        occurrenceCount: apiBill.schedule.max_occurrences ?? undefined,
+      },
+    }
+  }
+
+  return {
+    ...baseDefaults,
+    billType: 'one_off',
+    dueDate: apiBill.due_date ?? apiBill.issue_date,
+    recurrence: getDefaultRecurrence(),
+  }
+}
+
 function getDefaultLineItem(): BillFormValues['lineItems'][number] {
   return {
     description: '',
@@ -725,6 +686,46 @@ function getDefaultRecurrence(): NonNullable<BillFormValues['recurrence']> {
   }
 }
 
+const toApiPayload = billFormSchema.transform(
+  (values): ApiBillPayload => ({
+    kind: values.billType,
+    customer: {
+      name: values.customerName,
+      email: values.customerEmail,
+    },
+    status: values.status,
+    issue_date: values.issueDate,
+    due_date: values.billType === 'one_off' ? values.dueDate : null,
+    currency: values.currency,
+    line_items: values.lineItems.map((item) => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      unit_amount_cents: dollarsToCents(item.unitPrice),
+      taxable: item.taxable,
+    })),
+    tax_rate_bps: Math.round(values.taxRate * 100),
+    auto_collect: values.collectPaymentAutomatically,
+    memo: values.memo || null,
+    schedule:
+      values.billType === 'repeating'
+        ? {
+            frequency: values.recurrence.frequency,
+            interval: values.recurrence.interval,
+            starts_on: values.recurrence.startsOn,
+            ends_on:
+              values.recurrence.endStrategy === 'on_date'
+                ? (values.recurrence.endsOn ?? null)
+                : null,
+            max_occurrences:
+              values.recurrence.endStrategy === 'after_occurrences'
+                ? (values.recurrence.occurrenceCount ?? null)
+                : null,
+          }
+        : null,
+  }),
+)
+
 function toApiSubmission(values: BillFormValues): ApiSubmission {
   const billId = values.editorMode === 'api' ? sampleApiBill.id : ':billId'
 
@@ -732,7 +733,7 @@ function toApiSubmission(values: BillFormValues): ApiSubmission {
     endpoint:
       values.submitIntent === 'create' ? '/api/bills' : `/api/bills/${billId}`,
     method: values.submitIntent === 'create' ? 'POST' : 'PATCH',
-    body: z.encode(billFormCodec, values),
+    body: toApiPayload.parse(values),
   }
 }
 
