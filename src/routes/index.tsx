@@ -11,6 +11,7 @@ import {
   type FieldPath,
   type FieldPathValue,
   type FieldValues,
+  type UseFormReturn,
   useFieldArray,
   useForm,
   useWatch,
@@ -193,6 +194,7 @@ const billFormSchema = z.discriminatedUnion('billType', [
 ])
 
 type BillFormValues = z.infer<typeof billFormSchema>
+type BillForm = UseFormReturn<BillFormValues>
 
 function Home() {
   const search = Route.useSearch()
@@ -290,19 +292,6 @@ function UpsertBillForm({
       keepDefaultValues: true,
     },
   })
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: 'lineItems',
-  })
-  const watchedValues = useWatch({ control: form.control })
-  const billType = useWatch({ control: form.control, name: 'billType' })
-  const lineItems = useWatch({ control: form.control, name: 'lineItems' })
-  const taxRate = useWatch({ control: form.control, name: 'taxRate' })
-  const parsedWatchedValues = billFormSchema.safeParse(watchedValues)
-  const totals = calculateTotals(lineItems ?? [], Number(taxRate) || 0)
-  const submissionPreview = parsedWatchedValues.success
-    ? toApiSubmission(parsedWatchedValues.data)
-    : 'Complete the required fields to inspect the API submission.'
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
@@ -313,426 +302,471 @@ function UpsertBillForm({
             console.info('Submitting bill', toApiSubmission(values))
           })}
         >
-          <Card>
-            <CardHeader>
-              <CardTitle>Bill Details</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FieldGroup className="grid gap-4 md:grid-cols-2">
-                <TextInput
-                  error={form.formState.errors.customerName?.message}
-                  label="Customer name"
-                  autoComplete="organization"
-                  {...form.register('customerName')}
-                />
-                <TextInput
-                  error={form.formState.errors.customerEmail?.message}
-                  label="Customer email"
-                  autoComplete="email"
-                  spellCheck={false}
-                  type="email"
-                  {...form.register('customerEmail')}
-                />
-                <SelectInput
-                  error={form.formState.errors.status?.message}
-                  label="Status"
-                  {...form.register('status')}
-                >
-                  {billStatuses.map((status) => (
-                    <NativeSelectOption key={status} value={status}>
-                      {titleCase(status)}
-                    </NativeSelectOption>
-                  ))}
-                </SelectInput>
-                <SelectInput
-                  error={form.formState.errors.currency?.message}
-                  label="Currency"
-                  {...form.register('currency')}
-                >
-                  {currencies.map((currency) => (
-                    <NativeSelectOption key={currency} value={currency}>
-                      {currency}
-                    </NativeSelectOption>
-                  ))}
-                </SelectInput>
-                <TextInput
-                  error={form.formState.errors.issueDate?.message}
-                  label="Issue date"
-                  type="date"
-                  {...form.register('issueDate')}
-                />
-                <FormConditional
-                  control={form.control}
-                  name="billType"
-                  render={(currentBillType) => currentBillType === 'one_off'}
-                >
-                  <TextInput
-                    error={form.formState.errors.dueDate?.message}
-                    label="Due date"
-                    type="date"
-                    {...form.register('dueDate')}
-                  />
-                </FormConditional>
-              </FieldGroup>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Bill Type</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2">
-                <ChoiceCard
-                  active={billType === 'one_off'}
-                  description="Collect this bill once with a fixed due date."
-                  title="One-off"
-                  onClick={() => {
-                    form.setValue('billType', 'one_off', {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }}
-                />
-                <ChoiceCard
-                  active={billType === 'repeating'}
-                  description="Generate future bills on a daily, monthly, or yearly cadence."
-                  title="Repeating"
-                  onClick={() => {
-                    form.setValue('billType', 'repeating', {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-
-                    if (!form.getValues('recurrence')) {
-                      form.setValue('recurrence', getDefaultRecurrence(), {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      })
-                    }
-                  }}
-                />
-              </div>
-
-              <FormConditional
-                control={form.control}
-                name="billType"
-                render={(currentBillType) => currentBillType === 'repeating'}
-              >
-                <Card className="mt-5">
-                  <CardContent>
-                    <FieldGroup className="grid gap-4 md:grid-cols-2">
-                      <SelectInput
-                        error={
-                          form.formState.errors.recurrence?.frequency?.message
-                        }
-                        label="Frequency"
-                        {...form.register('recurrence.frequency')}
-                      >
-                        {recurrenceFrequencies.map((frequency) => (
-                          <NativeSelectOption key={frequency} value={frequency}>
-                            {titleCase(frequency)}
-                          </NativeSelectOption>
-                        ))}
-                      </SelectInput>
-                      <TextInput
-                        error={
-                          form.formState.errors.recurrence?.interval?.message
-                        }
-                        label="Every"
-                        min={1}
-                        type="number"
-                        {...form.register('recurrence.interval', {
-                          valueAsNumber: true,
-                        })}
-                      />
-                      <TextInput
-                        error={
-                          form.formState.errors.recurrence?.startsOn?.message
-                        }
-                        label="Starts on"
-                        type="date"
-                        {...form.register('recurrence.startsOn')}
-                      />
-                      <FormConditional
-                        control={form.control}
-                        name="recurrence.frequency"
-                        render={(frequency) => frequency === 'daily'}
-                      >
-                        <WeekdayPicker
-                          error={
-                            form.formState.errors.recurrence?.weekdays?.message
-                          }
-                          selectedWeekdays={
-                            watchedValues.recurrence?.weekdays ?? []
-                          }
-                          onChange={(nextWeekdays) =>
-                            form.setValue('recurrence.weekdays', nextWeekdays, {
-                              shouldDirty: true,
-                              shouldValidate: true,
-                            })
-                          }
-                        />
-                      </FormConditional>
-                      <FormConditional
-                        control={form.control}
-                        name="recurrence.frequency"
-                        render={(frequency) => frequency === 'monthly'}
-                      >
-                        <TextInput
-                          error={
-                            form.formState.errors.recurrence?.monthlyAnchorDate
-                              ?.message
-                          }
-                          label="Monthly anchor date"
-                          type="date"
-                          {...form.register('recurrence.monthlyAnchorDate')}
-                        />
-                        <FieldDescription>
-                          If a month does not have that day, the bill runs on
-                          the last valid day of that month.
-                        </FieldDescription>
-                      </FormConditional>
-                      <FormConditional
-                        control={form.control}
-                        name="recurrence.frequency"
-                        render={(frequency) => frequency === 'yearly'}
-                      >
-                        <TextInput
-                          error={
-                            form.formState.errors.recurrence?.yearlyAnchorDate
-                              ?.message
-                          }
-                          label="Yearly anchor date"
-                          type="date"
-                          {...form.register('recurrence.yearlyAnchorDate')}
-                        />
-                        <FieldDescription>
-                          If a future year does not have that date, the bill
-                          runs on the last valid day of that month.
-                        </FieldDescription>
-                      </FormConditional>
-                      <SelectInput
-                        error={
-                          form.formState.errors.recurrence?.endStrategy?.message
-                        }
-                        label="Ends"
-                        {...form.register('recurrence.endStrategy')}
-                      >
-                        <NativeSelectOption value="never">
-                          Never
-                        </NativeSelectOption>
-                        <NativeSelectOption value="on_date">
-                          On a date
-                        </NativeSelectOption>
-                        <NativeSelectOption value="after_occurrences">
-                          After occurrences
-                        </NativeSelectOption>
-                      </SelectInput>
-                      <FormConditional
-                        control={form.control}
-                        name="recurrence.endStrategy"
-                        render={(endStrategy) => endStrategy === 'on_date'}
-                      >
-                        <TextInput
-                          error={
-                            form.formState.errors.recurrence?.endsOn?.message
-                          }
-                          label="End date"
-                          type="date"
-                          {...form.register('recurrence.endsOn')}
-                        />
-                      </FormConditional>
-                      <FormConditional
-                        control={form.control}
-                        name="recurrence.endStrategy"
-                        render={(endStrategy) =>
-                          endStrategy === 'after_occurrences'
-                        }
-                      >
-                        <TextInput
-                          error={
-                            form.formState.errors.recurrence?.occurrenceCount
-                              ?.message
-                          }
-                          label="Occurrences"
-                          min={2}
-                          type="number"
-                          {...form.register('recurrence.occurrenceCount', {
-                            setValueAs: (value) =>
-                              value === '' ? undefined : Number(value),
-                          })}
-                        />
-                      </FormConditional>
-                    </FieldGroup>
-                  </CardContent>
-                </Card>
-              </FormConditional>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Line Items</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-4">
-                {fields.map((field, index) => (
-                  <Card key={field.id}>
-                    <CardContent className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]">
-                      <TextInput
-                        error={
-                          form.formState.errors.lineItems?.[index]?.description
-                            ?.message
-                        }
-                        label="Description"
-                        {...form.register(`lineItems.${index}.description`)}
-                      />
-                      <TextInput
-                        error={
-                          form.formState.errors.lineItems?.[index]?.quantity
-                            ?.message
-                        }
-                        label="Qty"
-                        min={1}
-                        type="number"
-                        {...form.register(`lineItems.${index}.quantity`, {
-                          valueAsNumber: true,
-                        })}
-                      />
-                      <TextInput
-                        error={
-                          form.formState.errors.lineItems?.[index]?.unitPrice
-                            ?.message
-                        }
-                        label="Unit price"
-                        min={0}
-                        step="0.01"
-                        type="number"
-                        {...form.register(`lineItems.${index}.unitPrice`, {
-                          valueAsNumber: true,
-                        })}
-                      />
-                      <div className="flex items-end gap-3">
-                        <CheckboxField
-                          checked={!!lineItems?.[index]?.taxable}
-                          label="Taxable"
-                          onCheckedChange={(checked) =>
-                            form.setValue(
-                              `lineItems.${index}.taxable`,
-                              Boolean(checked),
-                              {
-                                shouldDirty: true,
-                                shouldValidate: true,
-                              },
-                            )
-                          }
-                        />
-                        <Button
-                          disabled={fields.length === 1}
-                          size="lg"
-                          type="button"
-                          variant="destructive"
-                          onClick={() => remove(index)}
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              <Button
-                className="mt-4"
-                type="button"
-                variant="outline"
-                onClick={() => append(getDefaultLineItem())}
-              >
-                Add Line Item
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment & Notes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FieldGroup className="grid gap-4 md:grid-cols-2">
-                <TextInput
-                  error={form.formState.errors.taxRate?.message}
-                  label="Tax rate (%)"
-                  min={0}
-                  step="0.01"
-                  type="number"
-                  {...form.register('taxRate', { valueAsNumber: true })}
-                />
-                <CheckboxField
-                  checked={!!watchedValues.collectPaymentAutomatically}
-                  label="Collect payment automatically"
-                  onCheckedChange={(checked) =>
-                    form.setValue(
-                      'collectPaymentAutomatically',
-                      Boolean(checked),
-                      {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      },
-                    )
-                  }
-                />
-              </FieldGroup>
-              <TextareaInput
-                className="mt-4"
-                error={form.formState.errors.memo?.message}
-                label="Memo"
-                rows={4}
-                {...form.register('memo')}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Bill total</p>
-                <p className="text-3xl font-bold">
-                  {money.format(totals.total)}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {money.format(totals.subtotal)} subtotal +{' '}
-                  {money.format(totals.tax)} tax
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <SelectInput
-                  label="Submit as"
-                  {...form.register('submitIntent')}
-                >
-                  <NativeSelectOption value="create">
-                    Create Endpoint
-                  </NativeSelectOption>
-                  <NativeSelectOption value="update">
-                    Update Endpoint
-                  </NativeSelectOption>
-                </SelectInput>
-                <Button className="self-end" size="lg" type="submit">
-                  Transform & Submit
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <BillDetailsSection form={form} />
+          <BillTypeSection form={form} />
+          <LineItemsSection form={form} />
+          <PaymentNotesSection form={form} />
+          <SubmissionSection form={form} />
         </form>
       </section>
 
       <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
         <CodePreviewCard title={sourceTitle} value={sourceValue} />
-        <CodePreviewCard
-          title="Derived submission preview"
-          value={submissionPreview}
-        />
+        <SubmissionPreviewCard form={form} />
       </aside>
     </div>
+  )
+}
+
+function BillDetailsSection({ form }: { form: BillForm }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Bill Details</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup className="grid gap-4 md:grid-cols-2">
+          <TextInput
+            error={form.formState.errors.customerName?.message}
+            label="Customer name"
+            autoComplete="organization"
+            {...form.register('customerName')}
+          />
+          <TextInput
+            error={form.formState.errors.customerEmail?.message}
+            label="Customer email"
+            autoComplete="email"
+            spellCheck={false}
+            type="email"
+            {...form.register('customerEmail')}
+          />
+          <SelectInput
+            error={form.formState.errors.status?.message}
+            label="Status"
+            {...form.register('status')}
+          >
+            {billStatuses.map((status) => (
+              <NativeSelectOption key={status} value={status}>
+                {titleCase(status)}
+              </NativeSelectOption>
+            ))}
+          </SelectInput>
+          <SelectInput
+            error={form.formState.errors.currency?.message}
+            label="Currency"
+            {...form.register('currency')}
+          >
+            {currencies.map((currency) => (
+              <NativeSelectOption key={currency} value={currency}>
+                {currency}
+              </NativeSelectOption>
+            ))}
+          </SelectInput>
+          <TextInput
+            error={form.formState.errors.issueDate?.message}
+            label="Issue date"
+            type="date"
+            {...form.register('issueDate')}
+          />
+          <FormConditional
+            control={form.control}
+            name="billType"
+            render={(billType) => billType === 'one_off'}
+          >
+            <TextInput
+              error={form.formState.errors.dueDate?.message}
+              label="Due date"
+              type="date"
+              {...form.register('dueDate')}
+            />
+          </FormConditional>
+        </FieldGroup>
+      </CardContent>
+    </Card>
+  )
+}
+
+function BillTypeSection({ form }: { form: BillForm }) {
+  const billType = useWatch({ control: form.control, name: 'billType' })
+  const weekdaysValue = useWatch({
+    control: form.control,
+    name: 'recurrence.weekdays',
+  })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Bill Type</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-4 md:grid-cols-2">
+          <ChoiceCard
+            active={billType === 'one_off'}
+            description="Collect this bill once with a fixed due date."
+            title="One-off"
+            onClick={() => {
+              form.setValue('billType', 'one_off', {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }}
+          />
+          <ChoiceCard
+            active={billType === 'repeating'}
+            description="Generate future bills on a daily, monthly, or yearly cadence."
+            title="Repeating"
+            onClick={() => {
+              form.setValue('billType', 'repeating', {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+
+              if (!form.getValues('recurrence')) {
+                form.setValue('recurrence', getDefaultRecurrence(), {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+            }}
+          />
+        </div>
+
+        <FormConditional
+          control={form.control}
+          name="billType"
+          render={(currentBillType) => currentBillType === 'repeating'}
+        >
+          <Card className="mt-5">
+            <CardContent>
+              <FieldGroup className="grid gap-4 md:grid-cols-2">
+                <SelectInput
+                  error={form.formState.errors.recurrence?.frequency?.message}
+                  label="Frequency"
+                  {...form.register('recurrence.frequency')}
+                >
+                  {recurrenceFrequencies.map((frequency) => (
+                    <NativeSelectOption key={frequency} value={frequency}>
+                      {titleCase(frequency)}
+                    </NativeSelectOption>
+                  ))}
+                </SelectInput>
+                <TextInput
+                  error={form.formState.errors.recurrence?.interval?.message}
+                  label="Every"
+                  min={1}
+                  type="number"
+                  {...form.register('recurrence.interval', {
+                    valueAsNumber: true,
+                  })}
+                />
+                <TextInput
+                  error={form.formState.errors.recurrence?.startsOn?.message}
+                  label="Starts on"
+                  type="date"
+                  {...form.register('recurrence.startsOn')}
+                />
+                <RecurrenceFrequencyFields
+                  form={form}
+                  weekdaysValue={weekdaysValue ?? []}
+                />
+                <SelectInput
+                  error={form.formState.errors.recurrence?.endStrategy?.message}
+                  label="Ends"
+                  {...form.register('recurrence.endStrategy')}
+                >
+                  <NativeSelectOption value="never">Never</NativeSelectOption>
+                  <NativeSelectOption value="on_date">
+                    On a date
+                  </NativeSelectOption>
+                  <NativeSelectOption value="after_occurrences">
+                    After occurrences
+                  </NativeSelectOption>
+                </SelectInput>
+                <RecurrenceEndFields form={form} />
+              </FieldGroup>
+            </CardContent>
+          </Card>
+        </FormConditional>
+      </CardContent>
+    </Card>
+  )
+}
+
+function RecurrenceFrequencyFields({
+  form,
+  weekdaysValue,
+}: {
+  form: BillForm
+  weekdaysValue: ApiWeekday[]
+}) {
+  return (
+    <>
+      <FormConditional
+        control={form.control}
+        name="recurrence.frequency"
+        render={(frequency) => frequency === 'daily'}
+      >
+        <WeekdayPicker
+          error={form.formState.errors.recurrence?.weekdays?.message}
+          selectedWeekdays={weekdaysValue}
+          onChange={(nextWeekdays) =>
+            form.setValue('recurrence.weekdays', nextWeekdays, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+        />
+      </FormConditional>
+      <FormConditional
+        control={form.control}
+        name="recurrence.frequency"
+        render={(frequency) => frequency === 'monthly'}
+      >
+        <TextInput
+          error={form.formState.errors.recurrence?.monthlyAnchorDate?.message}
+          label="Monthly anchor date"
+          type="date"
+          {...form.register('recurrence.monthlyAnchorDate')}
+        />
+        <FieldDescription>
+          If a month does not have that day, the bill runs on the last valid day
+          of that month.
+        </FieldDescription>
+      </FormConditional>
+      <FormConditional
+        control={form.control}
+        name="recurrence.frequency"
+        render={(frequency) => frequency === 'yearly'}
+      >
+        <TextInput
+          error={form.formState.errors.recurrence?.yearlyAnchorDate?.message}
+          label="Yearly anchor date"
+          type="date"
+          {...form.register('recurrence.yearlyAnchorDate')}
+        />
+        <FieldDescription>
+          If a future year does not have that date, the bill runs on the last
+          valid day of that month.
+        </FieldDescription>
+      </FormConditional>
+    </>
+  )
+}
+
+function RecurrenceEndFields({ form }: { form: BillForm }) {
+  return (
+    <>
+      <FormConditional
+        control={form.control}
+        name="recurrence.endStrategy"
+        render={(endStrategy) => endStrategy === 'on_date'}
+      >
+        <TextInput
+          error={form.formState.errors.recurrence?.endsOn?.message}
+          label="End date"
+          type="date"
+          {...form.register('recurrence.endsOn')}
+        />
+      </FormConditional>
+      <FormConditional
+        control={form.control}
+        name="recurrence.endStrategy"
+        render={(endStrategy) => endStrategy === 'after_occurrences'}
+      >
+        <TextInput
+          error={form.formState.errors.recurrence?.occurrenceCount?.message}
+          label="Occurrences"
+          min={2}
+          type="number"
+          {...form.register('recurrence.occurrenceCount', {
+            setValueAs: (value) => (value === '' ? undefined : Number(value)),
+          })}
+        />
+      </FormConditional>
+    </>
+  )
+}
+
+function LineItemsSection({ form }: { form: BillForm }) {
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: 'lineItems',
+  })
+  const lineItems = useWatch({ control: form.control, name: 'lineItems' })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Line Items</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4">
+          {fields.map((field, index) => (
+            <Card key={field.id}>
+              <CardContent className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]">
+                <TextInput
+                  error={
+                    form.formState.errors.lineItems?.[index]?.description
+                      ?.message
+                  }
+                  label="Description"
+                  {...form.register(`lineItems.${index}.description`)}
+                />
+                <TextInput
+                  error={
+                    form.formState.errors.lineItems?.[index]?.quantity?.message
+                  }
+                  label="Qty"
+                  min={1}
+                  type="number"
+                  {...form.register(`lineItems.${index}.quantity`, {
+                    valueAsNumber: true,
+                  })}
+                />
+                <TextInput
+                  error={
+                    form.formState.errors.lineItems?.[index]?.unitPrice?.message
+                  }
+                  label="Unit price"
+                  min={0}
+                  step="0.01"
+                  type="number"
+                  {...form.register(`lineItems.${index}.unitPrice`, {
+                    valueAsNumber: true,
+                  })}
+                />
+                <div className="flex items-end gap-3">
+                  <CheckboxField
+                    checked={!!lineItems?.[index]?.taxable}
+                    label="Taxable"
+                    onCheckedChange={(checked) =>
+                      form.setValue(
+                        `lineItems.${index}.taxable`,
+                        Boolean(checked),
+                        {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        },
+                      )
+                    }
+                  />
+                  <Button
+                    disabled={fields.length === 1}
+                    size="lg"
+                    type="button"
+                    variant="destructive"
+                    onClick={() => remove(index)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <Button
+          className="mt-4"
+          type="button"
+          variant="outline"
+          onClick={() => append(getDefaultLineItem())}
+        >
+          Add Line Item
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
+
+function PaymentNotesSection({ form }: { form: BillForm }) {
+  const collectPaymentAutomatically = useWatch({
+    control: form.control,
+    name: 'collectPaymentAutomatically',
+  })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Payment & Notes</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup className="grid gap-4 md:grid-cols-2">
+          <TextInput
+            error={form.formState.errors.taxRate?.message}
+            label="Tax rate (%)"
+            min={0}
+            step="0.01"
+            type="number"
+            {...form.register('taxRate', { valueAsNumber: true })}
+          />
+          <CheckboxField
+            checked={!!collectPaymentAutomatically}
+            label="Collect payment automatically"
+            onCheckedChange={(checked) =>
+              form.setValue('collectPaymentAutomatically', Boolean(checked), {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
+          />
+        </FieldGroup>
+        <TextareaInput
+          className="mt-4"
+          error={form.formState.errors.memo?.message}
+          label="Memo"
+          rows={4}
+          {...form.register('memo')}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
+function SubmissionSection({ form }: { form: BillForm }) {
+  const lineItems = useWatch({ control: form.control, name: 'lineItems' })
+  const taxRate = useWatch({ control: form.control, name: 'taxRate' })
+  const totals = calculateTotals(lineItems ?? [], Number(taxRate) || 0)
+
+  return (
+    <Card>
+      <CardContent className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-sm text-muted-foreground">Bill total</p>
+          <p className="text-3xl font-bold">{money.format(totals.total)}</p>
+          <p className="text-sm text-muted-foreground">
+            {money.format(totals.subtotal)} subtotal +{' '}
+            {money.format(totals.tax)} tax
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <SelectInput label="Submit as" {...form.register('submitIntent')}>
+            <NativeSelectOption value="create">
+              Create Endpoint
+            </NativeSelectOption>
+            <NativeSelectOption value="update">
+              Update Endpoint
+            </NativeSelectOption>
+          </SelectInput>
+          <Button className="self-end" size="lg" type="submit">
+            Transform & Submit
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SubmissionPreviewCard({ form }: { form: BillForm }) {
+  const watchedValues = useWatch({ control: form.control })
+  const parsedWatchedValues = billFormSchema.safeParse(watchedValues)
+  const submissionPreview = parsedWatchedValues.success
+    ? toApiSubmission(parsedWatchedValues.data)
+    : 'Complete the required fields to inspect the API submission.'
+
+  return (
+    <CodePreviewCard
+      title="Derived submission preview"
+      value={submissionPreview}
+    />
   )
 }
 
