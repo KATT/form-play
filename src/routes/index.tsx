@@ -100,17 +100,17 @@ const highlightedJsonCache = new Map<string, Promise<string>>()
 const lineItemSchema = z.object({
   id: z.string().optional(),
   description: z.string().min(1, 'Add a description'),
-  quantity: z.number().min(1, 'Quantity must be at least 1'),
-  unitPrice: z.number().min(0, 'Unit price cannot be negative'),
+  quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
+  unitPrice: z.coerce.number().min(0, 'Unit price cannot be negative'),
   taxable: z.boolean(),
 })
 
 const recurrenceBaseSchema = z.object({
-  interval: z.number().min(1, 'Repeat interval must be at least 1'),
+  interval: z.coerce.number().min(1, 'Repeat interval must be at least 1'),
   startsOn: z.string().min(1, 'Choose a start date'),
   endStrategy: z.enum(recurrenceEndStrategies),
   endsOn: z.string().optional(),
-  occurrenceCount: z.number().optional(),
+  occurrenceCount: z.coerce.number().optional(),
 })
 
 const weekdayRecurrenceSchema = recurrenceBaseSchema.extend({
@@ -165,7 +165,7 @@ const baseBillSchema = z.object({
   issueDate: z.string().min(1, 'Choose an issue date'),
   currency: z.enum(currencies),
   lineItems: z.array(lineItemSchema).min(1, 'Add at least one line item'),
-  taxRate: z.number().min(0).max(100, 'Tax rate cannot exceed 100%'),
+  taxRate: z.coerce.number().min(0).max(100, 'Tax rate cannot exceed 100%'),
   collectPaymentAutomatically: z.boolean(),
   memo: z.string().max(500, 'Keep the memo under 500 characters').optional(),
 })
@@ -187,9 +187,10 @@ const billFormSchema = z.discriminatedUnion('billType', [
   repeatingBillSchema,
 ])
 
-type BillFormValues = z.infer<typeof billFormSchema>
-type BillForm = UseFormReturn<BillFormValues>
-type BillFormFieldName = FieldPath<BillFormValues>
+type BillFormInputValues = z.input<typeof billFormSchema>
+type BillFormValues = z.output<typeof billFormSchema>
+type BillForm = UseFormReturn<BillFormInputValues, unknown, BillFormValues>
+type BillFormFieldName = FieldPath<BillFormInputValues>
 type ControlledInputProps = Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
@@ -198,8 +199,6 @@ type ControlledInputProps = Omit<
   form: BillForm
   label: string
   name: BillFormFieldName
-  setValueAs?: (value: string) => unknown
-  valueAsNumber?: boolean
 }
 type ControlledSelectProps = Omit<
   React.SelectHTMLAttributes<HTMLSelectElement>,
@@ -306,11 +305,11 @@ function UpsertBillForm({
   sourceTitle,
   sourceValue,
 }: {
-  defaultValues: BillFormValues
+  defaultValues: BillFormInputValues
   sourceTitle: string
   sourceValue: unknown
 }) {
-  const form = useForm<BillFormValues>({
+  const form = useForm<BillFormInputValues, unknown, BillFormValues>({
     resolver: zodResolver(billFormSchema),
     defaultValues,
     values: defaultValues,
@@ -473,7 +472,6 @@ function BillTypeSection({ form }: { form: BillForm }) {
                   min={1}
                   name="recurrence.interval"
                   type="number"
-                  valueAsNumber
                 />
                 <ControlledTextInput
                   error={form.formState.errors.recurrence?.startsOn?.message}
@@ -592,7 +590,6 @@ function RecurrenceEndFields({ form }: { form: BillForm }) {
           min={2}
           name="recurrence.occurrenceCount"
           type="number"
-          setValueAs={(value) => (value === '' ? undefined : Number(value))}
         />
       </FormConditional>
     </>
@@ -633,7 +630,6 @@ function LineItemsSection({ form }: { form: BillForm }) {
                   min={1}
                   name={`lineItems.${index}.quantity`}
                   type="number"
-                  valueAsNumber
                 />
                 <ControlledTextInput
                   error={
@@ -645,7 +641,6 @@ function LineItemsSection({ form }: { form: BillForm }) {
                   name={`lineItems.${index}.unitPrice`}
                   step="0.01"
                   type="number"
-                  valueAsNumber
                 />
                 <div className="flex items-end gap-3">
                   <Controller
@@ -702,7 +697,6 @@ function PaymentNotesSection({ form }: { form: BillForm }) {
             name="taxRate"
             step="0.01"
             type="number"
-            valueAsNumber
           />
           <Controller
             control={form.control}
@@ -838,13 +832,7 @@ function getRecurrenceError(form: BillForm, name: string) {
   return recurrenceErrors?.[name]?.message
 }
 
-function ControlledTextInput({
-  form,
-  name,
-  setValueAs,
-  valueAsNumber = false,
-  ...props
-}: ControlledInputProps) {
+function ControlledTextInput({ form, name, ...props }: ControlledInputProps) {
   return (
     <Controller
       control={form.control}
@@ -855,17 +843,7 @@ function ControlledTextInput({
           name={field.name}
           value={field.value == null ? '' : String(field.value)}
           onBlur={field.onBlur}
-          onChange={(event) => {
-            const nextValue = event.currentTarget.value
-
-            field.onChange(
-              setValueAs
-                ? setValueAs(nextValue)
-                : valueAsNumber
-                  ? Number(nextValue)
-                  : nextValue,
-            )
-          }}
+          onChange={(event) => field.onChange(event.currentTarget.value)}
         />
       )}
     />
@@ -1353,13 +1331,12 @@ function getApiSchedule(recurrence: NonNullable<BillFormValues['recurrence']>) {
 }
 
 function calculateTotals(
-  lineItems: Array<
-    Pick<
-      BillFormValues['lineItems'][number],
-      'quantity' | 'unitPrice' | 'taxable'
-    >
-  >,
-  taxRate: number,
+  lineItems: Array<{
+    quantity: unknown
+    unitPrice: unknown
+    taxable: boolean
+  }>,
+  taxRate: unknown,
 ) {
   const subtotal = lineItems.reduce(
     (total, item) =>
@@ -1373,7 +1350,7 @@ function calculateTotals(
         : total,
     0,
   )
-  const tax = taxableSubtotal * (taxRate / 100)
+  const tax = taxableSubtotal * ((Number(taxRate) || 0) / 100)
 
   return {
     subtotal,
