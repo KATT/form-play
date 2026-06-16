@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -613,8 +614,8 @@ function UpsertBillForm({
       </section>
 
       <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
-        <JsonCard title={sourceTitle} value={sourceValue} />
-        <JsonCard
+        <CodePreviewCard title={sourceTitle} value={sourceValue} />
+        <CodePreviewCard
           title="Derived submission preview"
           value={submissionPreview}
         />
@@ -763,17 +764,31 @@ function CheckboxField({
   )
 }
 
-function JsonCard({ title, value }: { title: string; value: unknown }) {
+function CodePreviewCard({ title, value }: { title: string; value: unknown }) {
+  const code = formatCodePreview(value)
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>Live JSON preview</CardDescription>
+        <CardAction>
+          <Button
+            size="sm"
+            type="button"
+            variant="outline"
+            onClick={() => {
+              void navigator.clipboard.writeText(code)
+            }}
+          >
+            Copy JSON
+          </Button>
+        </CardAction>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[520px] rounded-lg border bg-muted/30">
-          <pre className="p-4 text-xs leading-relaxed">
-            {JSON.stringify(value, null, 2)}
+          <pre className="overflow-x-auto p-4 text-xs leading-relaxed">
+            <code translate="no">{code}</code>
           </pre>
         </ScrollArea>
       </CardContent>
@@ -997,6 +1012,10 @@ function titleCase(value: string) {
   return value
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function formatCodePreview(value: unknown) {
+  return typeof value === 'string' ? value : JSON.stringify(value, null, 2)
 }
 
 function isAccordionSection(
