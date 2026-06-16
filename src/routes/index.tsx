@@ -5,7 +5,7 @@ import jsonLanguage from '@shikijs/langs/json'
 import githubDarkTheme from '@shikijs/themes/github-dark'
 import githubLightTheme from '@shikijs/themes/github-light'
 import { createFileRoute } from '@tanstack/react-router'
-import { Suspense, use, useDeferredValue, useId } from 'react'
+import { Suspense, use, useDeferredValue } from 'react'
 import {
   type Control,
   type FieldPath,
@@ -37,16 +37,19 @@ import {
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  ControlledSelectInput,
+  ControlledTextInput,
+  ControlledTextareaInput,
+} from '@/components/ui/react-hook-form-fields'
+import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Textarea } from '@/components/ui/textarea'
 import {
   sampleApiBill,
   type ApiBill,
@@ -190,36 +193,6 @@ const billFormSchema = z.discriminatedUnion('billType', [
 type BillFormInputValues = z.input<typeof billFormSchema>
 type BillFormValues = z.output<typeof billFormSchema>
 type BillForm = UseFormReturn<BillFormInputValues, unknown, BillFormValues>
-type BillFormFieldName = FieldPath<BillFormInputValues>
-type ControlledInputProps = Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
-> & {
-  error?: string
-  form: BillForm
-  label: string
-  name: BillFormFieldName
-}
-type ControlledSelectProps = Omit<
-  React.SelectHTMLAttributes<HTMLSelectElement>,
-  'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'size' | 'value'
-> & {
-  children: React.ReactNode
-  error?: string
-  form: BillForm
-  label: string
-  name: BillFormFieldName
-}
-type ControlledTextareaProps = Omit<
-  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-  'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
-> & {
-  className?: string
-  error?: string
-  form: BillForm
-  label: string
-  name: BillFormFieldName
-}
 
 function Home() {
   const search = Route.useSearch()
@@ -830,144 +803,6 @@ function getRecurrenceError(form: BillForm, name: string) {
     | undefined
 
   return recurrenceErrors?.[name]?.message
-}
-
-function ControlledTextInput({ form, name, ...props }: ControlledInputProps) {
-  return (
-    <Controller
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <TextInput
-          {...props}
-          name={field.name}
-          value={field.value == null ? '' : String(field.value)}
-          onBlur={field.onBlur}
-          onChange={(event) => field.onChange(event.currentTarget.value)}
-        />
-      )}
-    />
-  )
-}
-
-function ControlledSelectInput({
-  children,
-  form,
-  name,
-  ...props
-}: ControlledSelectProps) {
-  return (
-    <Controller
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <SelectInput
-          {...props}
-          name={field.name}
-          value={field.value == null ? '' : String(field.value)}
-          onBlur={field.onBlur}
-          onChange={(event) => field.onChange(event.currentTarget.value)}
-        >
-          {children}
-        </SelectInput>
-      )}
-    />
-  )
-}
-
-function ControlledTextareaInput({
-  form,
-  name,
-  ...props
-}: ControlledTextareaProps) {
-  return (
-    <Controller
-      control={form.control}
-      name={name}
-      render={({ field }) => (
-        <TextareaInput
-          {...props}
-          name={field.name}
-          value={field.value == null ? '' : String(field.value)}
-          onBlur={field.onBlur}
-          onChange={(event) => field.onChange(event.currentTarget.value)}
-        />
-      )}
-    />
-  )
-}
-
-function TextInput({
-  error,
-  id,
-  label,
-  ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & {
-  error?: string
-  label: string
-}) {
-  const generatedId = useId()
-  const inputId = id ?? generatedId
-
-  return (
-    <Field data-invalid={!!error}>
-      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
-      <Input aria-invalid={!!error} id={inputId} {...props} />
-      <FieldError>{error}</FieldError>
-    </Field>
-  )
-}
-
-function SelectInput({
-  children,
-  error,
-  id,
-  label,
-  ...props
-}: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> & {
-  error?: string
-  label: string
-}) {
-  const generatedId = useId()
-  const selectId = id ?? generatedId
-
-  return (
-    <Field data-invalid={!!error}>
-      <FieldLabel htmlFor={selectId}>{label}</FieldLabel>
-      <NativeSelect
-        aria-invalid={!!error}
-        className="w-full"
-        id={selectId}
-        {...props}
-      >
-        {children}
-      </NativeSelect>
-      <FieldError>{error}</FieldError>
-    </Field>
-  )
-}
-
-function TextareaInput({
-  className,
-  error,
-  id,
-  label,
-  ...props
-}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
-  className?: string
-  error?: string
-  label: string
-}) {
-  const generatedId = useId()
-  const textareaId = id ?? generatedId
-
-  return (
-    <Field className={className} data-invalid={!!error}>
-      <FieldLabel htmlFor={textareaId}>{label}</FieldLabel>
-      <Textarea aria-invalid={!!error} id={textareaId} {...props} />
-      <FieldError>{error}</FieldError>
-    </Field>
-  )
 }
 
 function CheckboxField({
