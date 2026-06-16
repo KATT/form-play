@@ -7,6 +7,7 @@ import {
   sampleApiBill,
   type ApiBill,
   type ApiBillPayload,
+  type ApiBillPayloadBase,
   type ApiSubmission,
 } from './-bill-api'
 
@@ -690,7 +691,7 @@ function getDefaultRecurrence(): NonNullable<BillFormValues['recurrence']> {
 }
 
 const toApiPayload = billFormSchema.transform((values): ApiBillPayload => {
-  const basePayload = {
+  const basePayload: ApiBillPayloadBase = {
     kind: values.billType,
     customer: {
       name: values.customerName,

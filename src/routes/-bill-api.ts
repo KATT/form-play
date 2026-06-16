@@ -33,7 +33,7 @@ export type ApiBill = {
   }
 }
 
-export type ApiCreateBillPayload = {
+export type ApiBillPayloadBase = {
   kind: ApiBillKind
   customer: {
     name: string
@@ -43,12 +43,6 @@ export type ApiCreateBillPayload = {
   issue_date: string
   due_date: string | null
   currency: ApiCurrency
-  line_items: Array<{
-    description: string
-    quantity: number
-    unit_amount_cents: number
-    taxable: boolean
-  }>
   tax_rate_bps: number
   auto_collect: boolean
   memo: string | null
@@ -61,35 +55,26 @@ export type ApiCreateBillPayload = {
   }
 }
 
-export type ApiUpdateBillPayload = {
-  id: string
-  kind: ApiBillKind
-  customer: {
-    name: string
-    email: string
-  }
-  status: ApiBillStatus
-  issue_date: string
-  due_date: string | null
-  currency: ApiCurrency
+export type ApiCreateBillPayload = ApiBillPayloadBase & {
   line_items: Array<{
-    id?: string
     description: string
     quantity: number
     unit_amount_cents: number
     taxable: boolean
   }>
-  tax_rate_bps: number
-  auto_collect: boolean
-  memo: string | null
-  schedule: null | {
-    frequency: ApiRecurrenceFrequency
-    interval: number
-    starts_on: string
-    ends_on: string | null
-    max_occurrences: number | null
-  }
 }
+
+export type ApiUpdateBillPayload = {
+  id: string
+} & ApiBillPayloadBase & {
+    line_items: Array<{
+      id?: string
+      description: string
+      quantity: number
+      unit_amount_cents: number
+      taxable: boolean
+    }>
+  }
 
 export type ApiBillPayload = ApiCreateBillPayload | ApiUpdateBillPayload
 
