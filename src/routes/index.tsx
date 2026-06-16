@@ -402,16 +402,7 @@ function BillTypeSection({ form }: { form: BillForm }) {
                 active={field.value === 'repeating'}
                 description="Generate future bills on a daily, weekly, monthly, or yearly cadence."
                 title="Repeating"
-                onClick={() => {
-                  field.onChange('repeating')
-
-                  if (!form.getValues('recurrence')) {
-                    form.setValue('recurrence', getDefaultRecurrence(), {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }
-                }}
+                onClick={() => field.onChange('repeating')}
               />
             </div>
           )}
