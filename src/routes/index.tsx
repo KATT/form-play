@@ -38,29 +38,6 @@ import {
   type ApiSubmission,
 } from './-bill-api'
 
-export const Route = createFileRoute('/')({
-  component: Home,
-  validateSearch: (
-    search,
-  ): { sections: Array<(typeof accordionSections)[number]> } => {
-    if (Array.isArray(search.sections)) {
-      return {
-        sections: search.sections.filter(isAccordionSection),
-      }
-    }
-
-    if (typeof search.sections === 'string') {
-      return {
-        sections: search.sections.split(',').filter(isAccordionSection),
-      }
-    }
-
-    return {
-      sections: ['create'],
-    }
-  },
-})
-
 const currencies = ['USD', 'EUR', 'GBP'] as const
 const billStatuses = ['draft', 'scheduled', 'sent', 'paid'] as const
 const editorModes = ['new', 'api'] as const
@@ -72,6 +49,30 @@ const recurrenceEndStrategies = [
   'after_occurrences',
 ] as const
 const accordionSections = ['create', 'edit'] as const
+
+const routeSearchSchema = z.object({
+  sections: z
+    .preprocess(
+      (value) => {
+        if (Array.isArray(value)) {
+          return value
+        }
+
+        if (typeof value === 'string') {
+          return value.split(',')
+        }
+
+        return undefined
+      },
+      z.array(z.enum(accordionSections)),
+    )
+    .catch(['create']),
+})
+
+export const Route = createFileRoute('/')({
+  component: Home,
+  validateSearch: routeSearchSchema,
+})
 
 const money = new Intl.NumberFormat('en-US', {
   style: 'currency',
