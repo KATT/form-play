@@ -19,6 +19,7 @@
     "check": "pnpm format:check && pnpm lint"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.4.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
     "@tanstack/react-router": "latest",
@@ -29,7 +30,9 @@
     "lucide-react": "^0.545.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "tailwindcss": "^4.1.18"
+    "react-hook-form": "^7.79.0",
+    "tailwindcss": "^4.1.18",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.16",
