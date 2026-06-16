@@ -12,6 +12,7 @@ import {
   type FieldPathValue,
   type FieldValues,
   type UseFormReturn,
+  Controller,
   useFieldArray,
   useForm,
   useWatch,
@@ -380,49 +381,41 @@ function BillDetailsSection({ form }: { form: BillForm }) {
 }
 
 function BillTypeSection({ form }: { form: BillForm }) {
-  const billType = useWatch({ control: form.control, name: 'billType' })
-  const weekdaysValue = useWatch({
-    control: form.control,
-    name: 'recurrence.weekdays',
-  })
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Bill Type</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-2">
-          <ChoiceCard
-            active={billType === 'one_off'}
-            description="Collect this bill once with a fixed due date."
-            title="One-off"
-            onClick={() => {
-              form.setValue('billType', 'one_off', {
-                shouldDirty: true,
-                shouldValidate: true,
-              })
-            }}
-          />
-          <ChoiceCard
-            active={billType === 'repeating'}
-            description="Generate future bills on a daily, weekly, monthly, or yearly cadence."
-            title="Repeating"
-            onClick={() => {
-              form.setValue('billType', 'repeating', {
-                shouldDirty: true,
-                shouldValidate: true,
-              })
+        <Controller
+          control={form.control}
+          name="billType"
+          render={({ field }) => (
+            <div className="grid gap-4 md:grid-cols-2">
+              <ChoiceCard
+                active={field.value === 'one_off'}
+                description="Collect this bill once with a fixed due date."
+                title="One-off"
+                onClick={() => field.onChange('one_off')}
+              />
+              <ChoiceCard
+                active={field.value === 'repeating'}
+                description="Generate future bills on a daily, weekly, monthly, or yearly cadence."
+                title="Repeating"
+                onClick={() => {
+                  field.onChange('repeating')
 
-              if (!form.getValues('recurrence')) {
-                form.setValue('recurrence', getDefaultRecurrence(), {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
-              }
-            }}
-          />
-        </div>
+                  if (!form.getValues('recurrence')) {
+                    form.setValue('recurrence', getDefaultRecurrence(), {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                }}
+              />
+            </div>
+          )}
+        />
 
         <FormConditional
           control={form.control}
@@ -458,10 +451,7 @@ function BillTypeSection({ form }: { form: BillForm }) {
                   type="date"
                   {...form.register('recurrence.startsOn')}
                 />
-                <RecurrenceFrequencyFields
-                  form={form}
-                  weekdaysValue={weekdaysValue ?? []}
-                />
+                <RecurrenceFrequencyFields form={form} />
                 <SelectInput
                   error={form.formState.errors.recurrence?.endStrategy?.message}
                   label="Ends"
@@ -485,13 +475,7 @@ function BillTypeSection({ form }: { form: BillForm }) {
   )
 }
 
-function RecurrenceFrequencyFields({
-  form,
-  weekdaysValue,
-}: {
-  form: BillForm
-  weekdaysValue: ApiWeekday[]
-}) {
+function RecurrenceFrequencyFields({ form }: { form: BillForm }) {
   return (
     <>
       <FormConditional
@@ -499,15 +483,16 @@ function RecurrenceFrequencyFields({
         name="recurrence.frequency"
         render={(frequency) => frequency === 'daily' || frequency === 'weekly'}
       >
-        <WeekdayPicker
-          error={getRecurrenceError(form, 'weekdays')}
-          selectedWeekdays={weekdaysValue}
-          onChange={(nextWeekdays) =>
-            form.setValue('recurrence.weekdays', nextWeekdays, {
-              shouldDirty: true,
-              shouldValidate: true,
-            })
-          }
+        <Controller
+          control={form.control}
+          name="recurrence.weekdays"
+          render={({ field }) => (
+            <WeekdayPicker
+              error={getRecurrenceError(form, 'weekdays')}
+              selectedWeekdays={field.value ?? []}
+              onChange={field.onChange}
+            />
+          )}
         />
       </FormConditional>
       <FormConditional
@@ -545,7 +530,6 @@ function RecurrenceFrequencyFields({
     </>
   )
 }
-
 function RecurrenceEndFields({ form }: { form: BillForm }) {
   return (
     <>
@@ -585,7 +569,6 @@ function LineItemsSection({ form }: { form: BillForm }) {
     control: form.control,
     name: 'lineItems',
   })
-  const lineItems = useWatch({ control: form.control, name: 'lineItems' })
 
   return (
     <Card>
@@ -629,19 +612,16 @@ function LineItemsSection({ form }: { form: BillForm }) {
                   })}
                 />
                 <div className="flex items-end gap-3">
-                  <CheckboxField
-                    checked={!!lineItems?.[index]?.taxable}
-                    label="Taxable"
-                    onCheckedChange={(checked) =>
-                      form.setValue(
-                        `lineItems.${index}.taxable`,
-                        Boolean(checked),
-                        {
-                          shouldDirty: true,
-                          shouldValidate: true,
-                        },
-                      )
-                    }
+                  <Controller
+                    control={form.control}
+                    name={`lineItems.${index}.taxable`}
+                    render={({ field }) => (
+                      <CheckboxField
+                        checked={!!field.value}
+                        label="Taxable"
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
                   />
                   <Button
                     disabled={fields.length === 1}
@@ -671,11 +651,6 @@ function LineItemsSection({ form }: { form: BillForm }) {
 }
 
 function PaymentNotesSection({ form }: { form: BillForm }) {
-  const collectPaymentAutomatically = useWatch({
-    control: form.control,
-    name: 'collectPaymentAutomatically',
-  })
-
   return (
     <Card>
       <CardHeader>
@@ -691,15 +666,16 @@ function PaymentNotesSection({ form }: { form: BillForm }) {
             type="number"
             {...form.register('taxRate', { valueAsNumber: true })}
           />
-          <CheckboxField
-            checked={!!collectPaymentAutomatically}
-            label="Collect payment automatically"
-            onCheckedChange={(checked) =>
-              form.setValue('collectPaymentAutomatically', Boolean(checked), {
-                shouldDirty: true,
-                shouldValidate: true,
-              })
-            }
+          <Controller
+            control={form.control}
+            name="collectPaymentAutomatically"
+            render={({ field }) => (
+              <CheckboxField
+                checked={!!field.value}
+                label="Collect payment automatically"
+                onCheckedChange={field.onChange}
+              />
+            )}
           />
         </FieldGroup>
         <TextareaInput
