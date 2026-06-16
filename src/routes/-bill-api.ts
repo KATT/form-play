@@ -33,7 +33,36 @@ export type ApiBill = {
   }
 }
 
-export type ApiBillPayload = {
+export type ApiCreateBillPayload = {
+  kind: ApiBillKind
+  customer: {
+    name: string
+    email: string
+  }
+  status: ApiBillStatus
+  issue_date: string
+  due_date: string | null
+  currency: ApiCurrency
+  line_items: Array<{
+    description: string
+    quantity: number
+    unit_amount_cents: number
+    taxable: boolean
+  }>
+  tax_rate_bps: number
+  auto_collect: boolean
+  memo: string | null
+  schedule: null | {
+    frequency: ApiRecurrenceFrequency
+    interval: number
+    starts_on: string
+    ends_on: string | null
+    max_occurrences: number | null
+  }
+}
+
+export type ApiUpdateBillPayload = {
+  id: string
   kind: ApiBillKind
   customer: {
     name: string
@@ -62,11 +91,21 @@ export type ApiBillPayload = {
   }
 }
 
-export type ApiSubmission = {
-  endpoint: string
-  method: 'POST' | 'PATCH'
-  body: ApiBillPayload
+export type ApiBillPayload = ApiCreateBillPayload | ApiUpdateBillPayload
+
+export type ApiCreateSubmission = {
+  endpoint: '/api/bills'
+  method: 'POST'
+  body: ApiCreateBillPayload
 }
+
+export type ApiUpdateSubmission = {
+  endpoint: string
+  method: 'PATCH'
+  body: ApiUpdateBillPayload
+}
+
+export type ApiSubmission = ApiCreateSubmission | ApiUpdateSubmission
 
 export const sampleApiBill: ApiBill = {
   id: 'bill_42',

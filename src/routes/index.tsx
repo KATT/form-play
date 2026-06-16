@@ -67,6 +67,7 @@ const recurrenceSchema = z
   })
 
 const baseBillSchema = z.object({
+  billId: z.string().optional(),
   editorMode: z.enum(editorModes),
   submitIntent: z.enum(apiSubmitIntents),
   customerName: z.string().min(2, 'Customer name is required'),
@@ -600,6 +601,7 @@ function JsonCard({ title, value }: { title: string; value: unknown }) {
 
 function getNewBillDefaults(): BillFormValues {
   return {
+    billId: undefined,
     editorMode: 'new',
     submitIntent: 'create',
     billType: 'one_off',
@@ -619,6 +621,7 @@ function getNewBillDefaults(): BillFormValues {
 
 function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
   const baseDefaults = {
+    billId: apiBill.id,
     editorMode: 'api' as const,
     submitIntent: 'update' as const,
     customerName: apiBill.customer.name,
@@ -686,8 +689,8 @@ function getDefaultRecurrence(): NonNullable<BillFormValues['recurrence']> {
   }
 }
 
-const toApiPayload = billFormSchema.transform(
-  (values): ApiBillPayload => ({
+const toApiPayload = billFormSchema.transform((values): ApiBillPayload => {
+  const basePayload = {
     kind: values.billType,
     customer: {
       name: values.customerName,
@@ -697,13 +700,6 @@ const toApiPayload = billFormSchema.transform(
     issue_date: values.issueDate,
     due_date: values.billType === 'one_off' ? values.dueDate : null,
     currency: values.currency,
-    line_items: values.lineItems.map((item) => ({
-      id: item.id,
-      description: item.description,
-      quantity: item.quantity,
-      unit_amount_cents: dollarsToCents(item.unitPrice),
-      taxable: item.taxable,
-    })),
     tax_rate_bps: Math.round(values.taxRate * 100),
     auto_collect: values.collectPaymentAutomatically,
     memo: values.memo || null,
@@ -723,17 +719,57 @@ const toApiPayload = billFormSchema.transform(
                 : null,
           }
         : null,
-  }),
-)
+  }
 
-function toApiSubmission(values: BillFormValues): ApiSubmission {
-  const billId = values.editorMode === 'api' ? sampleApiBill.id : ':billId'
+  if (values.submitIntent === 'create') {
+    return {
+      ...basePayload,
+      line_items: values.lineItems.map((item) => ({
+        description: item.description,
+        quantity: item.quantity,
+        unit_amount_cents: dollarsToCents(item.unitPrice),
+        taxable: item.taxable,
+      })),
+    }
+  }
 
   return {
-    endpoint:
-      values.submitIntent === 'create' ? '/api/bills' : `/api/bills/${billId}`,
-    method: values.submitIntent === 'create' ? 'POST' : 'PATCH',
-    body: toApiPayload.parse(values),
+    id: values.billId ?? ':billId',
+    ...basePayload,
+    line_items: values.lineItems.map((item) => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      unit_amount_cents: dollarsToCents(item.unitPrice),
+      taxable: item.taxable,
+    })),
+  }
+})
+
+function toApiSubmission(values: BillFormValues): ApiSubmission {
+  const billId = values.billId ?? ':billId'
+  const body = toApiPayload.parse(values)
+
+  if (values.submitIntent === 'create') {
+    if ('id' in body) {
+      throw new Error('Create bill payload should not include a bill id')
+    }
+
+    return {
+      endpoint: '/api/bills',
+      method: 'POST',
+      body,
+    }
+  }
+
+  if (!('id' in body)) {
+    throw new Error('Update bill payload must include a bill id')
+  }
+
+  return {
+    endpoint: `/api/bills/${billId}`,
+    method: 'PATCH',
+    body,
   }
 }
 
