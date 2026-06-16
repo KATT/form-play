@@ -3,6 +3,13 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
+import {
+  sampleApiBill,
+  type ApiBill,
+  type ApiBillPayload,
+  type ApiSubmission,
+} from './-bill-api'
+
 export const Route = createFileRoute('/')({ component: Home })
 
 const currencies = ['USD', 'EUR', 'GBP'] as const
@@ -91,79 +98,6 @@ const billFormSchema = z.discriminatedUnion('billType', [
 ])
 
 type BillFormValues = z.infer<typeof billFormSchema>
-type ApiBill = {
-  id: string
-  kind: 'one_off' | 'repeating'
-  status: (typeof billStatuses)[number]
-  customer: {
-    name: string
-    email: string
-  }
-  issue_date: string
-  due_date: string | null
-  currency: (typeof currencies)[number]
-  line_items: Array<{
-    id: string
-    description: string
-    quantity: number
-    unit_amount_cents: number
-    taxable: boolean
-  }>
-  tax_rate_bps: number
-  auto_collect: boolean
-  memo: string | null
-  schedule: null | {
-    frequency: (typeof recurrenceFrequencies)[number]
-    interval: number
-    starts_on: string
-    ends_on: string | null
-    max_occurrences: number | null
-  }
-}
-type ApiSubmission = {
-  endpoint: string
-  method: 'POST' | 'PATCH'
-  body: z.output<typeof toApiPayload>
-}
-
-const sampleApiBill: ApiBill = {
-  id: 'bill_42',
-  kind: 'repeating',
-  status: 'scheduled',
-  customer: {
-    name: 'Acme Studios',
-    email: 'billing@acme.example',
-  },
-  issue_date: '2026-06-01',
-  due_date: null,
-  currency: 'USD',
-  line_items: [
-    {
-      id: 'li_design',
-      description: 'Design retainer',
-      quantity: 1,
-      unit_amount_cents: 450_000,
-      taxable: true,
-    },
-    {
-      id: 'li_support',
-      description: 'Priority support',
-      quantity: 4,
-      unit_amount_cents: 25_000,
-      taxable: false,
-    },
-  ],
-  tax_rate_bps: 825,
-  auto_collect: true,
-  memo: 'Imported from an imaginary billing API.',
-  schedule: {
-    frequency: 'monthly',
-    interval: 1,
-    starts_on: '2026-07-01',
-    ends_on: null,
-    max_occurrences: null,
-  },
-}
 
 function Home() {
   return (
@@ -752,43 +686,45 @@ function getDefaultRecurrence(): NonNullable<BillFormValues['recurrence']> {
   }
 }
 
-const toApiPayload = billFormSchema.transform((values) => ({
-  kind: values.billType,
-  customer: {
-    name: values.customerName,
-    email: values.customerEmail,
-  },
-  status: values.status,
-  issue_date: values.issueDate,
-  due_date: values.billType === 'one_off' ? values.dueDate : null,
-  currency: values.currency,
-  line_items: values.lineItems.map((item) => ({
-    id: item.id,
-    description: item.description,
-    quantity: item.quantity,
-    unit_amount_cents: dollarsToCents(item.unitPrice),
-    taxable: item.taxable,
-  })),
-  tax_rate_bps: Math.round(values.taxRate * 100),
-  auto_collect: values.collectPaymentAutomatically,
-  memo: values.memo || null,
-  schedule:
-    values.billType === 'repeating'
-      ? {
-          frequency: values.recurrence.frequency,
-          interval: values.recurrence.interval,
-          starts_on: values.recurrence.startsOn,
-          ends_on:
-            values.recurrence.endStrategy === 'on_date'
-              ? values.recurrence.endsOn
-              : null,
-          max_occurrences:
-            values.recurrence.endStrategy === 'after_occurrences'
-              ? values.recurrence.occurrenceCount
-              : null,
-        }
-      : null,
-}))
+const toApiPayload = billFormSchema.transform(
+  (values): ApiBillPayload => ({
+    kind: values.billType,
+    customer: {
+      name: values.customerName,
+      email: values.customerEmail,
+    },
+    status: values.status,
+    issue_date: values.issueDate,
+    due_date: values.billType === 'one_off' ? values.dueDate : null,
+    currency: values.currency,
+    line_items: values.lineItems.map((item) => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      unit_amount_cents: dollarsToCents(item.unitPrice),
+      taxable: item.taxable,
+    })),
+    tax_rate_bps: Math.round(values.taxRate * 100),
+    auto_collect: values.collectPaymentAutomatically,
+    memo: values.memo || null,
+    schedule:
+      values.billType === 'repeating'
+        ? {
+            frequency: values.recurrence.frequency,
+            interval: values.recurrence.interval,
+            starts_on: values.recurrence.startsOn,
+            ends_on:
+              values.recurrence.endStrategy === 'on_date'
+                ? (values.recurrence.endsOn ?? null)
+                : null,
+            max_occurrences:
+              values.recurrence.endStrategy === 'after_occurrences'
+                ? (values.recurrence.occurrenceCount ?? null)
+                : null,
+          }
+        : null,
+  }),
+)
 
 function toApiSubmission(values: BillFormValues): ApiSubmission {
   const billId = values.editorMode === 'api' ? sampleApiBill.id : ':billId'
