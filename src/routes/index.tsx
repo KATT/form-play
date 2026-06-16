@@ -213,6 +213,7 @@ function Home() {
         </p>
 
         <Accordion
+          keepMounted
           className="mt-8 gap-5"
           multiple
           value={openSections}
@@ -240,9 +241,9 @@ function Home() {
             </AccordionTrigger>
             <AccordionContent>
               <UpsertBillForm
-                defaultValues={getNewBillDefaults()}
+                defaultValues={createBillDefaultValues}
                 sourceTitle="New bill defaults"
-                sourceValue={getNewBillDefaults()}
+                sourceValue={createBillDefaultValues}
               />
             </AccordionContent>
           </AccordionItem>
@@ -260,7 +261,7 @@ function Home() {
             </AccordionTrigger>
             <AccordionContent>
               <UpsertBillForm
-                defaultValues={getBillDefaultsFromApi(sampleApiBill)}
+                defaultValues={editBillDefaultValues}
                 sourceTitle="API bill response"
                 sourceValue={sampleApiBill}
               />
@@ -284,6 +285,10 @@ function UpsertBillForm({
   const form = useForm<BillFormValues>({
     resolver: zodResolver(billFormSchema),
     defaultValues,
+    values: defaultValues,
+    resetOptions: {
+      keepDefaultValues: true,
+    },
   })
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -1044,6 +1049,9 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
     recurrence: getDefaultRecurrence(),
   }
 }
+
+const createBillDefaultValues = getNewBillDefaults()
+const editBillDefaultValues = getBillDefaultsFromApi(sampleApiBill)
 
 function getDefaultLineItem(): BillFormValues['lineItems'][number] {
   return {
