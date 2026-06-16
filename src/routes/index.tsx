@@ -1,7 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createFileRoute } from '@tanstack/react-router'
 import { useId } from 'react'
-import { useFieldArray, useForm, useWatch } from 'react-hook-form'
+import {
+  type Control,
+  type FieldPath,
+  type FieldPathValue,
+  type FieldValues,
+  useFieldArray,
+  useForm,
+  useWatch,
+} from 'react-hook-form'
 import { z } from 'zod'
 
 import {
@@ -233,10 +241,6 @@ function UpsertBillForm({
   })
   const watchedValues = useWatch({ control: form.control })
   const billType = useWatch({ control: form.control, name: 'billType' })
-  const recurrenceEndStrategy = useWatch({
-    control: form.control,
-    name: 'recurrence.endStrategy',
-  })
   const lineItems = useWatch({ control: form.control, name: 'lineItems' })
   const taxRate = useWatch({ control: form.control, name: 'taxRate' })
   const parsedWatchedValues = billFormSchema.safeParse(watchedValues)
@@ -302,14 +306,20 @@ function UpsertBillForm({
                   type="date"
                   {...form.register('issueDate')}
                 />
-                {billType === 'one_off' ? (
-                  <TextInput
-                    error={form.formState.errors.dueDate?.message}
-                    label="Due date"
-                    type="date"
-                    {...form.register('dueDate')}
-                  />
-                ) : null}
+                <FormConditional
+                  control={form.control}
+                  name="billType"
+                  render={(currentBillType) =>
+                    currentBillType === 'one_off' ? (
+                      <TextInput
+                        error={form.formState.errors.dueDate?.message}
+                        label="Due date"
+                        type="date"
+                        {...form.register('dueDate')}
+                      />
+                    ) : null
+                  }
+                />
               </FieldGroup>
             </CardContent>
           </Card>
@@ -351,88 +361,119 @@ function UpsertBillForm({
                 />
               </div>
 
-              {billType === 'repeating' ? (
-                <Card className="mt-5">
-                  <CardContent>
-                    <FieldGroup className="grid gap-4 md:grid-cols-2">
-                      <SelectInput
-                        error={
-                          form.formState.errors.recurrence?.frequency?.message
-                        }
-                        label="Frequency"
-                        {...form.register('recurrence.frequency')}
-                      >
-                        {recurrenceFrequencies.map((frequency) => (
-                          <NativeSelectOption key={frequency} value={frequency}>
-                            {titleCase(frequency)}
-                          </NativeSelectOption>
-                        ))}
-                      </SelectInput>
-                      <TextInput
-                        error={
-                          form.formState.errors.recurrence?.interval?.message
-                        }
-                        label="Every"
-                        min={1}
-                        type="number"
-                        {...form.register('recurrence.interval', {
-                          valueAsNumber: true,
-                        })}
-                      />
-                      <TextInput
-                        error={
-                          form.formState.errors.recurrence?.startsOn?.message
-                        }
-                        label="Starts on"
-                        type="date"
-                        {...form.register('recurrence.startsOn')}
-                      />
-                      <SelectInput
-                        error={
-                          form.formState.errors.recurrence?.endStrategy?.message
-                        }
-                        label="Ends"
-                        {...form.register('recurrence.endStrategy')}
-                      >
-                        <NativeSelectOption value="never">
-                          Never
-                        </NativeSelectOption>
-                        <NativeSelectOption value="on_date">
-                          On a date
-                        </NativeSelectOption>
-                        <NativeSelectOption value="after_occurrences">
-                          After occurrences
-                        </NativeSelectOption>
-                      </SelectInput>
-                      {recurrenceEndStrategy === 'on_date' ? (
-                        <TextInput
-                          error={
-                            form.formState.errors.recurrence?.endsOn?.message
-                          }
-                          label="End date"
-                          type="date"
-                          {...form.register('recurrence.endsOn')}
-                        />
-                      ) : null}
-                      {recurrenceEndStrategy === 'after_occurrences' ? (
-                        <TextInput
-                          error={
-                            form.formState.errors.recurrence?.occurrenceCount
-                              ?.message
-                          }
-                          label="Occurrences"
-                          min={2}
-                          type="number"
-                          {...form.register('recurrence.occurrenceCount', {
-                            setValueAs: (value) =>
-                              value === '' ? undefined : Number(value),
-                          })}
-                        />
-                      ) : null}
-                    </FieldGroup>
-                  </CardContent>
-                </Card>
-              ) : null}
+              <FormConditional
+                control={form.control}
+                name="billType"
+                render={(currentBillType) =>
+                  currentBillType === 'repeating' ? (
+                    <Card className="mt-5">
+                      <CardContent>
+                        <FieldGroup className="grid gap-4 md:grid-cols-2">
+                          <SelectInput
+                            error={
+                              form.formState.errors.recurrence?.frequency
+                                ?.message
+                            }
+                            label="Frequency"
+                            {...form.register('recurrence.frequency')}
+                          >
+                            {recurrenceFrequencies.map((frequency) => (
+                              <NativeSelectOption
+                                key={frequency}
+                                value={frequency}
+                              >
+                                {titleCase(frequency)}
+                              </NativeSelectOption>
+                            ))}
+                          </SelectInput>
+                          <TextInput
+                            error={
+                              form.formState.errors.recurrence?.interval
+                                ?.message
+                            }
+                            label="Every"
+                            min={1}
+                            type="number"
+                            {...form.register('recurrence.interval', {
+                              valueAsNumber: true,
+                            })}
+                          />
+                          <TextInput
+                            error={
+                              form.formState.errors.recurrence?.startsOn
+                                ?.message
+                            }
+                            label="Starts on"
+                            type="date"
+                            {...form.register('recurrence.startsOn')}
+                          />
+                          <SelectInput
+                            error={
+                              form.formState.errors.recurrence?.endStrategy
+                                ?.message
+                            }
+                            label="Ends"
+                            {...form.register('recurrence.endStrategy')}
+                          >
+                            <NativeSelectOption value="never">
+                              Never
+                            </NativeSelectOption>
+                            <NativeSelectOption value="on_date">
+                              On a date
+                            </NativeSelectOption>
+                            <NativeSelectOption value="after_occurrences">
+                              After occurrences
+                            </NativeSelectOption>
+                          </SelectInput>
+                          <FormConditional
+                            control={form.control}
+                            name="recurrence.endStrategy"
+                            render={(endStrategy) =>
+                              endStrategy === 'on_date' ? (
+                                <TextInput
+                                  error={
+                                    form.formState.errors.recurrence?.endsOn
+                                      ?.message
+                                  }
+                                  label="End date"
+                                  type="date"
+                                  {...form.register('recurrence.endsOn')}
+                                />
+                              ) : null
+                            }
+                          />
+                          <FormConditional
+                            control={form.control}
+                            name="recurrence.endStrategy"
+                            render={(endStrategy) =>
+                              endStrategy === 'after_occurrences' ? (
+                                <TextInput
+                                  error={
+                                    form.formState.errors.recurrence
+                                      ?.occurrenceCount?.message
+                                  }
+                                  label="Occurrences"
+                                  min={2}
+                                  type="number"
+                                  {...form.register(
+                                    'recurrence.occurrenceCount',
+                                    {
+                                      setValueAs: (value) =>
+                                        value === ''
+                                          ? undefined
+                                          : Number(value),
+                                    },
+                                  )}
+                                />
+                              ) : null
+                            }
+                          />
+                        </FieldGroup>
+                      </CardContent>
+                    </Card>
+                  ) : null
+                }
+              />
             </CardContent>
           </Card>
 
@@ -625,6 +666,26 @@ function ChoiceCard({
       </span>
     </Button>
   )
+}
+
+function FormConditional<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+>({
+  control,
+  name,
+  render,
+}: {
+  control: Control<TFieldValues>
+  name: TName
+  render: (value: FieldPathValue<TFieldValues, TName>) => React.ReactNode
+}) {
+  const value = useWatch({ control, name }) as FieldPathValue<
+    TFieldValues,
+    TName
+  >
+
+  return <>{render(value)}</>
 }
 
 function TextInput({
