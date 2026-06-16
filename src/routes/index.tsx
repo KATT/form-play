@@ -38,7 +38,28 @@ import {
   type ApiSubmission,
 } from './-bill-api'
 
-export const Route = createFileRoute('/')({ component: Home })
+export const Route = createFileRoute('/')({
+  component: Home,
+  validateSearch: (
+    search,
+  ): { sections: Array<(typeof accordionSections)[number]> } => {
+    if (Array.isArray(search.sections)) {
+      return {
+        sections: search.sections.filter(isAccordionSection),
+      }
+    }
+
+    if (typeof search.sections === 'string') {
+      return {
+        sections: search.sections.split(',').filter(isAccordionSection),
+      }
+    }
+
+    return {
+      sections: ['create'],
+    }
+  },
+})
 
 const currencies = ['USD', 'EUR', 'GBP'] as const
 const billStatuses = ['draft', 'scheduled', 'sent', 'paid'] as const
@@ -50,6 +71,7 @@ const recurrenceEndStrategies = [
   'on_date',
   'after_occurrences',
 ] as const
+const accordionSections = ['create', 'edit'] as const
 
 const money = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -129,6 +151,10 @@ const billFormSchema = z.discriminatedUnion('billType', [
 type BillFormValues = z.infer<typeof billFormSchema>
 
 function Home() {
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+  const openSections = search.sections
+
   return (
     <main className="min-h-screen bg-background px-6 py-10 text-foreground">
       <div className="mx-auto max-w-7xl">
@@ -142,7 +168,21 @@ function Home() {
           defaults or defaults mapped from an imaginary API bill.
         </p>
 
-        <Accordion className="mt-8 gap-5" defaultValue={['create']} multiple>
+        <Accordion
+          className="mt-8 gap-5"
+          multiple
+          value={openSections}
+          onValueChange={(sections) => {
+            const nextSections = sections.filter(isAccordionSection)
+
+            navigate({
+              search: (previous) => ({
+                ...previous,
+                sections: nextSections,
+              }),
+            })
+          }}
+        >
           <AccordionItem value="create">
             <AccordionTrigger>
               <span>
@@ -927,4 +967,13 @@ function titleCase(value: string) {
   return value
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function isAccordionSection(
+  value: unknown,
+): value is (typeof accordionSections)[number] {
+  return (
+    typeof value === 'string' &&
+    accordionSections.includes(value as (typeof accordionSections)[number])
+  )
 }
