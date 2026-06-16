@@ -5,7 +5,7 @@ import jsonLanguage from '@shikijs/langs/json'
 import githubDarkTheme from '@shikijs/themes/github-dark'
 import githubLightTheme from '@shikijs/themes/github-light'
 import { createFileRoute } from '@tanstack/react-router'
-import { use, useId } from 'react'
+import { Suspense, use, useDeferredValue, useId } from 'react'
 import {
   type Control,
   type FieldPath,
@@ -916,6 +916,8 @@ function WeekdayPicker({
 
 function CodePreviewCard({ title, value }: { title: string; value: unknown }) {
   const code = formatCodePreview(value)
+  const deferredCode = useDeferredValue(code)
+  const isStale = code !== deferredCode
 
   return (
     <Card>
@@ -937,10 +939,29 @@ function CodePreviewCard({ title, value }: { title: string; value: unknown }) {
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[520px] rounded-lg border bg-muted/30">
-          <HighlightedJson code={code} />
+          <Suspense fallback={<CodePreviewFallback code={code} />}>
+            <div
+              aria-busy={isStale}
+              className={
+                isStale
+                  ? 'opacity-60 transition-opacity duration-200'
+                  : 'opacity-100 transition-opacity duration-200'
+              }
+            >
+              <HighlightedJson code={deferredCode} />
+            </div>
+          </Suspense>
         </ScrollArea>
       </CardContent>
     </Card>
+  )
+}
+
+function CodePreviewFallback({ code }: { code: string }) {
+  return (
+    <pre className="overflow-x-auto p-4 text-xs leading-relaxed">
+      <code translate="no">{code}</code>
+    </pre>
   )
 }
 
