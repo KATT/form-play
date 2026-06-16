@@ -2,6 +2,7 @@ import { useId } from 'react'
 import {
   Controller,
   type Control,
+  type FieldErrors,
   type FieldPath,
   type FieldValues,
 } from 'react-hook-form'
@@ -13,13 +14,15 @@ import { Textarea } from '@/components/ui/textarea'
 
 type FormWithControl<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>
+  formState: {
+    errors: FieldErrors<TFieldValues>
+  }
 }
 
 type ControlledFieldBase<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 > = {
-  error?: string
   form: FormWithControl<TFieldValues>
   label: string
   name: TName
@@ -60,6 +63,8 @@ function ControlledTextInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({ form, name, ...props }: ControlledTextInputProps<TFieldValues, TName>) {
+  const error = getFieldError(form.formState.errors, name)
+
   return (
     <Controller
       control={form.control}
@@ -67,6 +72,7 @@ function ControlledTextInput<
       render={({ field }) => (
         <TextInput
           {...props}
+          error={error}
           name={field.name}
           value={field.value == null ? '' : String(field.value)}
           onBlur={field.onBlur}
@@ -86,6 +92,8 @@ function ControlledSelectInput<
   name,
   ...props
 }: ControlledSelectInputProps<TFieldValues, TName>) {
+  const error = getFieldError(form.formState.errors, name)
+
   return (
     <Controller
       control={form.control}
@@ -93,6 +101,7 @@ function ControlledSelectInput<
       render={({ field }) => (
         <SelectInput
           {...props}
+          error={error}
           name={field.name}
           value={field.value == null ? '' : String(field.value)}
           onBlur={field.onBlur}
@@ -109,6 +118,8 @@ function ControlledTextareaInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({ form, name, ...props }: ControlledTextareaInputProps<TFieldValues, TName>) {
+  const error = getFieldError(form.formState.errors, name)
+
   return (
     <Controller
       control={form.control}
@@ -116,6 +127,7 @@ function ControlledTextareaInput<
       render={({ field }) => (
         <TextareaInput
           {...props}
+          error={error}
           name={field.name}
           value={field.value == null ? '' : String(field.value)}
           onBlur={field.onBlur}
@@ -124,6 +136,30 @@ function ControlledTextareaInput<
       )}
     />
   )
+}
+
+function getFieldError<TFieldValues extends FieldValues>(
+  errors: FieldErrors<TFieldValues>,
+  name: FieldPath<TFieldValues>,
+) {
+  const fieldError = name.split('.').reduce<unknown>((current, segment) => {
+    if (current && typeof current === 'object') {
+      return (current as Record<string, unknown>)[segment]
+    }
+
+    return undefined
+  }, errors)
+
+  if (
+    fieldError &&
+    typeof fieldError === 'object' &&
+    'message' in fieldError &&
+    typeof fieldError.message === 'string'
+  ) {
+    return fieldError.message
+  }
+
+  return undefined
 }
 
 function TextInput({

@@ -325,14 +325,12 @@ function BillDetailsSection({ form }: { form: BillForm }) {
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
           <ControlledTextInput
-            error={form.formState.errors.customerName?.message}
             form={form}
             label="Customer name"
             name="customerName"
             autoComplete="organization"
           />
           <ControlledTextInput
-            error={form.formState.errors.customerEmail?.message}
             form={form}
             label="Customer email"
             name="customerEmail"
@@ -340,24 +338,14 @@ function BillDetailsSection({ form }: { form: BillForm }) {
             spellCheck={false}
             type="email"
           />
-          <ControlledSelectInput
-            error={form.formState.errors.status?.message}
-            form={form}
-            label="Status"
-            name="status"
-          >
+          <ControlledSelectInput form={form} label="Status" name="status">
             {billStatuses.map((status) => (
               <NativeSelectOption key={status} value={status}>
                 {titleCase(status)}
               </NativeSelectOption>
             ))}
           </ControlledSelectInput>
-          <ControlledSelectInput
-            error={form.formState.errors.currency?.message}
-            form={form}
-            label="Currency"
-            name="currency"
-          >
+          <ControlledSelectInput form={form} label="Currency" name="currency">
             {currencies.map((currency) => (
               <NativeSelectOption key={currency} value={currency}>
                 {currency}
@@ -365,7 +353,6 @@ function BillDetailsSection({ form }: { form: BillForm }) {
             ))}
           </ControlledSelectInput>
           <ControlledTextInput
-            error={form.formState.errors.issueDate?.message}
             form={form}
             label="Issue date"
             name="issueDate"
@@ -377,7 +364,6 @@ function BillDetailsSection({ form }: { form: BillForm }) {
             render={(billType) => billType === 'one_off'}
           >
             <ControlledTextInput
-              error={form.formState.errors.dueDate?.message}
               form={form}
               label="Due date"
               name="dueDate"
@@ -427,7 +413,6 @@ function BillTypeSection({ form }: { form: BillForm }) {
             <CardContent>
               <FieldGroup className="grid gap-4 md:grid-cols-2">
                 <ControlledSelectInput
-                  error={form.formState.errors.recurrence?.frequency?.message}
                   form={form}
                   label="Frequency"
                   name="recurrence.frequency"
@@ -439,7 +424,6 @@ function BillTypeSection({ form }: { form: BillForm }) {
                   ))}
                 </ControlledSelectInput>
                 <ControlledTextInput
-                  error={form.formState.errors.recurrence?.interval?.message}
                   form={form}
                   label="Every"
                   min={1}
@@ -447,7 +431,6 @@ function BillTypeSection({ form }: { form: BillForm }) {
                   type="number"
                 />
                 <ControlledTextInput
-                  error={form.formState.errors.recurrence?.startsOn?.message}
                   form={form}
                   label="Starts on"
                   name="recurrence.startsOn"
@@ -455,7 +438,6 @@ function BillTypeSection({ form }: { form: BillForm }) {
                 />
                 <RecurrenceFrequencyFields form={form} />
                 <ControlledSelectInput
-                  error={form.formState.errors.recurrence?.endStrategy?.message}
                   form={form}
                   label="Ends"
                   name="recurrence.endStrategy"
@@ -504,7 +486,6 @@ function RecurrenceFrequencyFields({ form }: { form: BillForm }) {
         render={(frequency) => frequency === 'monthly'}
       >
         <ControlledTextInput
-          error={getRecurrenceError(form, 'monthlyAnchorDate')}
           form={form}
           label="Monthly anchor date"
           name="recurrence.monthlyAnchorDate"
@@ -521,7 +502,6 @@ function RecurrenceFrequencyFields({ form }: { form: BillForm }) {
         render={(frequency) => frequency === 'yearly'}
       >
         <ControlledTextInput
-          error={getRecurrenceError(form, 'yearlyAnchorDate')}
           form={form}
           label="Yearly anchor date"
           name="recurrence.yearlyAnchorDate"
@@ -544,7 +524,6 @@ function RecurrenceEndFields({ form }: { form: BillForm }) {
         render={(endStrategy) => endStrategy === 'on_date'}
       >
         <ControlledTextInput
-          error={form.formState.errors.recurrence?.endsOn?.message}
           form={form}
           label="End date"
           name="recurrence.endsOn"
@@ -557,7 +536,6 @@ function RecurrenceEndFields({ form }: { form: BillForm }) {
         render={(endStrategy) => endStrategy === 'after_occurrences'}
       >
         <ControlledTextInput
-          error={form.formState.errors.recurrence?.occurrenceCount?.message}
           form={form}
           label="Occurrences"
           min={2}
@@ -586,18 +564,11 @@ function LineItemsSection({ form }: { form: BillForm }) {
             <Card key={field.id}>
               <CardContent className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]">
                 <ControlledTextInput
-                  error={
-                    form.formState.errors.lineItems?.[index]?.description
-                      ?.message
-                  }
                   form={form}
                   label="Description"
                   name={`lineItems.${index}.description`}
                 />
                 <ControlledTextInput
-                  error={
-                    form.formState.errors.lineItems?.[index]?.quantity?.message
-                  }
                   form={form}
                   label="Qty"
                   min={1}
@@ -605,9 +576,6 @@ function LineItemsSection({ form }: { form: BillForm }) {
                   type="number"
                 />
                 <ControlledTextInput
-                  error={
-                    form.formState.errors.lineItems?.[index]?.unitPrice?.message
-                  }
                   form={form}
                   label="Unit price"
                   min={0}
@@ -663,7 +631,6 @@ function PaymentNotesSection({ form }: { form: BillForm }) {
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
           <ControlledTextInput
-            error={form.formState.errors.taxRate?.message}
             form={form}
             label="Tax rate (%)"
             min={0}
@@ -685,7 +652,6 @@ function PaymentNotesSection({ form }: { form: BillForm }) {
         </FieldGroup>
         <ControlledTextareaInput
           className="mt-4"
-          error={form.formState.errors.memo?.message}
           form={form}
           label="Memo"
           name="memo"
