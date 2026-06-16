@@ -51,22 +51,7 @@ const recurrenceEndStrategies = [
 const accordionSections = ['create', 'edit'] as const
 
 const routeSearchSchema = z.object({
-  sections: z
-    .preprocess(
-      (value) => {
-        if (Array.isArray(value)) {
-          return value
-        }
-
-        if (typeof value === 'string') {
-          return value.split(',')
-        }
-
-        return undefined
-      },
-      z.array(z.enum(accordionSections)),
-    )
-    .catch(['create']),
+  sections: z.array(z.enum(accordionSections)).catch(['create']),
 })
 
 export const Route = createFileRoute('/')({
