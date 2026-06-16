@@ -1,6 +1,11 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import { createHighlighterCore } from '@shikijs/core'
+import { createJavaScriptRegexEngine } from '@shikijs/engine-javascript'
+import jsonLanguage from '@shikijs/langs/json'
+import githubDarkTheme from '@shikijs/themes/github-dark'
+import githubLightTheme from '@shikijs/themes/github-light'
 import { createFileRoute } from '@tanstack/react-router'
-import { useId } from 'react'
+import { use, useId } from 'react'
 import {
   type Control,
   type FieldPath,
@@ -72,6 +77,12 @@ const money = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 })
+const shikiHighlighter = createHighlighterCore({
+  engine: createJavaScriptRegexEngine(),
+  langs: [jsonLanguage],
+  themes: [githubLightTheme, githubDarkTheme],
+})
+const highlightedJsonCache = new Map<string, Promise<string>>()
 
 const lineItemSchema = z.object({
   id: z.string().optional(),
@@ -787,12 +798,22 @@ function CodePreviewCard({ title, value }: { title: string; value: unknown }) {
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[520px] rounded-lg border bg-muted/30">
-          <pre className="overflow-x-auto p-4 text-xs leading-relaxed">
-            <code translate="no">{code}</code>
-          </pre>
+          <HighlightedJson code={code} />
         </ScrollArea>
       </CardContent>
     </Card>
+  )
+}
+
+function HighlightedJson({ code }: { code: string }) {
+  const highlightedCode = use(highlightJson(code))
+
+  return (
+    <div
+      className="overflow-x-auto [&_pre]:m-0 [&_pre]:bg-transparent! [&_pre]:p-4 [&_pre]:text-xs [&_pre]:leading-relaxed"
+      dangerouslySetInnerHTML={{ __html: highlightedCode }}
+      translate="no"
+    />
   )
 }
 
@@ -1016,6 +1037,28 @@ function titleCase(value: string) {
 
 function formatCodePreview(value: unknown) {
   return typeof value === 'string' ? value : JSON.stringify(value, null, 2)
+}
+
+function highlightJson(code: string) {
+  const cachedHighlight = highlightedJsonCache.get(code)
+
+  if (cachedHighlight) {
+    return cachedHighlight
+  }
+
+  const highlight = shikiHighlighter.then((highlighter) =>
+    highlighter.codeToHtml(code, {
+      lang: 'json',
+      themes: {
+        light: 'github-light',
+        dark: 'github-dark',
+      },
+    }),
+  )
+
+  highlightedJsonCache.set(code, highlight)
+
+  return highlight
 }
 
 function isAccordionSection(
