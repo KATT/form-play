@@ -36,6 +36,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Field,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -50,19 +51,29 @@ import {
   type ApiBillPayload,
   type ApiBillPayloadBase,
   type ApiSubmission,
+  type ApiWeekday,
 } from './-bill-api'
 
 const currencies = ['USD', 'EUR', 'GBP'] as const
 const billStatuses = ['draft', 'scheduled', 'sent', 'paid'] as const
 const editorModes = ['new', 'api'] as const
 const apiSubmitIntents = ['create', 'update'] as const
-const recurrenceFrequencies = ['weekly', 'monthly', 'yearly'] as const
+const recurrenceFrequencies = ['daily', 'monthly', 'yearly'] as const
 const recurrenceEndStrategies = [
   'never',
   'on_date',
   'after_occurrences',
 ] as const
 const accordionSections = ['create', 'edit'] as const
+const weekdays = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+] as const satisfies readonly ApiWeekday[]
 
 const routeSearchSchema = z.object({
   sections: z.array(z.enum(accordionSections)).catch(['create']),
@@ -97,11 +108,38 @@ const recurrenceSchema = z
     frequency: z.enum(recurrenceFrequencies),
     interval: z.number().min(1, 'Repeat interval must be at least 1'),
     startsOn: z.string().min(1, 'Choose a start date'),
+    weekdays: z.array(z.enum(weekdays)),
+    monthlyAnchorDate: z.string().optional(),
+    yearlyAnchorDate: z.string().optional(),
     endStrategy: z.enum(recurrenceEndStrategies),
     endsOn: z.string().optional(),
     occurrenceCount: z.number().optional(),
   })
   .superRefine((recurrence, ctx) => {
+    if (recurrence.frequency === 'daily' && recurrence.weekdays.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['weekdays'],
+        message: 'Choose at least 1 weekday',
+      })
+    }
+
+    if (recurrence.frequency === 'monthly' && !recurrence.monthlyAnchorDate) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['monthlyAnchorDate'],
+        message: 'Choose a monthly anchor date',
+      })
+    }
+
+    if (recurrence.frequency === 'yearly' && !recurrence.yearlyAnchorDate) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['yearlyAnchorDate'],
+        message: 'Choose a yearly anchor date',
+      })
+    }
+
     if (recurrence.endStrategy === 'on_date' && !recurrence.endsOn) {
       ctx.addIssue({
         code: 'custom',
@@ -353,7 +391,7 @@ function UpsertBillForm({
                 />
                 <ChoiceCard
                   active={billType === 'repeating'}
-                  description="Generate future bills on a weekly, monthly, or yearly cadence."
+                  description="Generate future bills on a daily, monthly, or yearly cadence."
                   title="Repeating"
                   onClick={() => {
                     form.setValue('billType', 'repeating', {
@@ -411,6 +449,64 @@ function UpsertBillForm({
                         type="date"
                         {...form.register('recurrence.startsOn')}
                       />
+                      <FormConditional
+                        control={form.control}
+                        name="recurrence.frequency"
+                        render={(frequency) => frequency === 'daily'}
+                      >
+                        <WeekdayPicker
+                          error={
+                            form.formState.errors.recurrence?.weekdays?.message
+                          }
+                          selectedWeekdays={
+                            watchedValues.recurrence?.weekdays ?? []
+                          }
+                          onChange={(nextWeekdays) =>
+                            form.setValue('recurrence.weekdays', nextWeekdays, {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            })
+                          }
+                        />
+                      </FormConditional>
+                      <FormConditional
+                        control={form.control}
+                        name="recurrence.frequency"
+                        render={(frequency) => frequency === 'monthly'}
+                      >
+                        <TextInput
+                          error={
+                            form.formState.errors.recurrence?.monthlyAnchorDate
+                              ?.message
+                          }
+                          label="Monthly anchor date"
+                          type="date"
+                          {...form.register('recurrence.monthlyAnchorDate')}
+                        />
+                        <FieldDescription>
+                          If a month does not have that day, the bill runs on
+                          the last valid day of that month.
+                        </FieldDescription>
+                      </FormConditional>
+                      <FormConditional
+                        control={form.control}
+                        name="recurrence.frequency"
+                        render={(frequency) => frequency === 'yearly'}
+                      >
+                        <TextInput
+                          error={
+                            form.formState.errors.recurrence?.yearlyAnchorDate
+                              ?.message
+                          }
+                          label="Yearly anchor date"
+                          type="date"
+                          {...form.register('recurrence.yearlyAnchorDate')}
+                        />
+                        <FieldDescription>
+                          If a future year does not have that date, the bill
+                          runs on the last valid day of that month.
+                        </FieldDescription>
+                      </FormConditional>
                       <SelectInput
                         error={
                           form.formState.errors.recurrence?.endStrategy?.message
@@ -775,6 +871,44 @@ function CheckboxField({
   )
 }
 
+function WeekdayPicker({
+  error,
+  onChange,
+  selectedWeekdays,
+}: {
+  error?: string
+  onChange: (weekdays: ApiWeekday[]) => void
+  selectedWeekdays: ApiWeekday[]
+}) {
+  return (
+    <Field data-invalid={!!error} className="md:col-span-2">
+      <FieldLabel>Weekdays</FieldLabel>
+      <FieldGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {weekdays.map((weekday) => (
+          <CheckboxField
+            checked={selectedWeekdays.includes(weekday)}
+            key={weekday}
+            label={titleCase(weekday)}
+            onCheckedChange={(checked) => {
+              onChange(
+                checked
+                  ? [...selectedWeekdays, weekday]
+                  : selectedWeekdays.filter(
+                      (selectedWeekday) => selectedWeekday !== weekday,
+                    ),
+              )
+            }}
+          />
+        ))}
+      </FieldGroup>
+      <FieldDescription>
+        Use weekdays to model daily billing rules like every business day.
+      </FieldDescription>
+      <FieldError>{error}</FieldError>
+    </Field>
+  )
+}
+
 function CodePreviewCard({ title, value }: { title: string; value: unknown }) {
   const code = formatCodePreview(value)
 
@@ -860,22 +994,46 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
   }
 
   if (apiBill.kind === 'repeating' && apiBill.schedule) {
+    const endStrategy: (typeof recurrenceEndStrategies)[number] = apiBill
+      .schedule.ends_on
+      ? 'on_date'
+      : apiBill.schedule.max_occurrences
+        ? 'after_occurrences'
+        : 'never'
+    const baseRecurrence = {
+      frequency: apiBill.schedule.frequency,
+      interval: apiBill.schedule.interval,
+      startsOn: apiBill.schedule.starts_on,
+      weekdays: [] as ApiWeekday[],
+      monthlyAnchorDate: '',
+      yearlyAnchorDate: '',
+      endStrategy,
+      endsOn: apiBill.schedule.ends_on ?? '',
+      occurrenceCount: apiBill.schedule.max_occurrences ?? undefined,
+    }
+
     return {
       ...baseDefaults,
       billType: 'repeating',
       dueDate: apiBill.due_date ?? undefined,
-      recurrence: {
-        frequency: apiBill.schedule.frequency,
-        interval: apiBill.schedule.interval,
-        startsOn: apiBill.schedule.starts_on,
-        endStrategy: apiBill.schedule.ends_on
-          ? 'on_date'
-          : apiBill.schedule.max_occurrences
-            ? 'after_occurrences'
-            : 'never',
-        endsOn: apiBill.schedule.ends_on ?? '',
-        occurrenceCount: apiBill.schedule.max_occurrences ?? undefined,
-      },
+      recurrence:
+        apiBill.schedule.frequency === 'daily'
+          ? {
+              ...baseRecurrence,
+              frequency: 'daily',
+              weekdays: apiBill.schedule.weekdays,
+            }
+          : apiBill.schedule.frequency === 'monthly'
+            ? {
+                ...baseRecurrence,
+                frequency: 'monthly',
+                monthlyAnchorDate: apiBill.schedule.anchor_date,
+              }
+            : {
+                ...baseRecurrence,
+                frequency: 'yearly',
+                yearlyAnchorDate: apiBill.schedule.anchor_date,
+              },
     }
   }
 
@@ -901,6 +1059,9 @@ function getDefaultRecurrence(): NonNullable<BillFormValues['recurrence']> {
     frequency: 'monthly',
     interval: 1,
     startsOn: '2026-07-01',
+    weekdays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+    monthlyAnchorDate: '2026-07-31',
+    yearlyAnchorDate: '2026-07-31',
     endStrategy: 'never',
     endsOn: '',
     occurrenceCount: undefined,
@@ -923,19 +1084,7 @@ const toApiPayload = billFormSchema.transform((values): ApiBillPayload => {
     memo: values.memo || null,
     schedule:
       values.billType === 'repeating'
-        ? {
-            frequency: values.recurrence.frequency,
-            interval: values.recurrence.interval,
-            starts_on: values.recurrence.startsOn,
-            ends_on:
-              values.recurrence.endStrategy === 'on_date'
-                ? (values.recurrence.endsOn ?? null)
-                : null,
-            max_occurrences:
-              values.recurrence.endStrategy === 'after_occurrences'
-                ? (values.recurrence.occurrenceCount ?? null)
-                : null,
-          }
+        ? getApiSchedule(values.recurrence)
         : null,
   }
 
@@ -991,6 +1140,54 @@ function toApiSubmission(values: BillFormValues): ApiSubmission {
   }
 }
 
+function getApiSchedule(recurrence: NonNullable<BillFormValues['recurrence']>) {
+  const end = {
+    ends_on:
+      recurrence.endStrategy === 'on_date' ? (recurrence.endsOn ?? null) : null,
+    max_occurrences:
+      recurrence.endStrategy === 'after_occurrences'
+        ? (recurrence.occurrenceCount ?? null)
+        : null,
+  }
+
+  if (recurrence.frequency === 'daily') {
+    return {
+      ...end,
+      frequency: 'daily' as const,
+      interval: recurrence.interval,
+      starts_on: recurrence.startsOn,
+      weekdays: recurrence.weekdays,
+    }
+  }
+
+  if (recurrence.frequency === 'monthly') {
+    const anchorDate = recurrence.monthlyAnchorDate ?? recurrence.startsOn
+
+    return {
+      ...end,
+      frequency: 'monthly' as const,
+      interval: recurrence.interval,
+      starts_on: recurrence.startsOn,
+      anchor_date: anchorDate,
+      day_of_month: getDateDay(anchorDate),
+      day_overflow: 'last_day' as const,
+    }
+  }
+
+  const anchorDate = recurrence.yearlyAnchorDate ?? recurrence.startsOn
+
+  return {
+    ...end,
+    frequency: 'yearly' as const,
+    interval: recurrence.interval,
+    starts_on: recurrence.startsOn,
+    anchor_date: anchorDate,
+    month: getDateMonth(anchorDate),
+    day: getDateDay(anchorDate),
+    day_overflow: 'last_day' as const,
+  }
+}
+
 function calculateTotals(
   lineItems: Array<
     Pick<
@@ -1027,6 +1224,14 @@ function dollarsToCents(value: number) {
 
 function centsToDollars(value: number) {
   return value / 100
+}
+
+function getDateMonth(value: string) {
+  return Number(value.slice(5, 7))
+}
+
+function getDateDay(value: string) {
+  return Number(value.slice(8, 10))
 }
 
 function titleCase(value: string) {

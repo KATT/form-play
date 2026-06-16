@@ -1,7 +1,47 @@
 export type ApiBillKind = 'one_off' | 'repeating'
 export type ApiBillStatus = 'draft' | 'scheduled' | 'sent' | 'paid'
 export type ApiCurrency = 'USD' | 'EUR' | 'GBP'
-export type ApiRecurrenceFrequency = 'weekly' | 'monthly' | 'yearly'
+export type ApiRecurrenceFrequency = 'daily' | 'monthly' | 'yearly'
+export type ApiWeekday =
+  | 'monday'
+  | 'tuesday'
+  | 'wednesday'
+  | 'thursday'
+  | 'friday'
+  | 'saturday'
+  | 'sunday'
+export type ApiDayOverflowPolicy = 'last_day'
+export type ApiScheduleEnd = {
+  ends_on: string | null
+  max_occurrences: number | null
+}
+export type ApiDailySchedule = ApiScheduleEnd & {
+  frequency: 'daily'
+  interval: number
+  starts_on: string
+  weekdays: ApiWeekday[]
+}
+export type ApiMonthlySchedule = ApiScheduleEnd & {
+  frequency: 'monthly'
+  interval: number
+  starts_on: string
+  anchor_date: string
+  day_of_month: number
+  day_overflow: ApiDayOverflowPolicy
+}
+export type ApiYearlySchedule = ApiScheduleEnd & {
+  frequency: 'yearly'
+  interval: number
+  starts_on: string
+  anchor_date: string
+  month: number
+  day: number
+  day_overflow: ApiDayOverflowPolicy
+}
+export type ApiBillSchedule =
+  | ApiDailySchedule
+  | ApiMonthlySchedule
+  | ApiYearlySchedule
 
 export type ApiBill = {
   id: string
@@ -24,13 +64,7 @@ export type ApiBill = {
   tax_rate_bps: number
   auto_collect: boolean
   memo: string | null
-  schedule: null | {
-    frequency: ApiRecurrenceFrequency
-    interval: number
-    starts_on: string
-    ends_on: string | null
-    max_occurrences: number | null
-  }
+  schedule: null | ApiBillSchedule
 }
 
 export type ApiBillPayloadBase = {
@@ -46,13 +80,7 @@ export type ApiBillPayloadBase = {
   tax_rate_bps: number
   auto_collect: boolean
   memo: string | null
-  schedule: null | {
-    frequency: ApiRecurrenceFrequency
-    interval: number
-    starts_on: string
-    ends_on: string | null
-    max_occurrences: number | null
-  }
+  schedule: null | ApiBillSchedule
 }
 
 export type ApiCreateBillPayload = ApiBillPayloadBase & {
@@ -126,6 +154,9 @@ export const sampleApiBill: ApiBill = {
     frequency: 'monthly',
     interval: 1,
     starts_on: '2026-07-01',
+    anchor_date: '2026-07-31',
+    day_of_month: 31,
+    day_overflow: 'last_day',
     ends_on: null,
     max_occurrences: null,
   },
