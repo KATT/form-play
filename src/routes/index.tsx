@@ -1,13 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createFileRoute } from '@tanstack/react-router'
-import { useMemo, useState } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
+import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
 export const Route = createFileRoute('/')({ component: Home })
 
 const currencies = ['USD', 'EUR', 'GBP'] as const
 const billStatuses = ['draft', 'scheduled', 'sent', 'paid'] as const
+const editorModes = ['new', 'api'] as const
+const apiSubmitIntents = ['create', 'update'] as const
 const recurrenceFrequencies = ['weekly', 'monthly', 'yearly'] as const
 const recurrenceEndStrategies = [
   'never',
@@ -59,6 +60,8 @@ const recurrenceSchema = z
   })
 
 const baseBillSchema = z.object({
+  editorMode: z.enum(editorModes),
+  submitIntent: z.enum(apiSubmitIntents),
   customerName: z.string().min(2, 'Customer name is required'),
   customerEmail: z.email('Use a valid email address'),
   status: z.enum(billStatuses),
@@ -117,7 +120,6 @@ type ApiBill = {
     max_occurrences: number | null
   }
 }
-type ApiSubmitIntent = 'create' | 'update'
 type ApiSubmission = {
   endpoint: string
   method: 'POST' | 'PATCH'
@@ -164,10 +166,6 @@ const sampleApiBill: ApiBill = {
 }
 
 function Home() {
-  const [apiSource, setApiSource] = useState<'new' | 'api'>('new')
-  const [submitIntent, setSubmitIntent] = useState<ApiSubmitIntent>('create')
-  const [submission, setSubmission] = useState<ApiSubmission | null>(null)
-
   const form = useForm<BillFormValues>({
     resolver: zodResolver(billFormSchema),
     defaultValues: getNewBillDefaults(),
@@ -176,53 +174,20 @@ function Home() {
     control: form.control,
     name: 'lineItems',
   })
-  const billType = form.watch('billType')
-  const recurrenceEndStrategy = form.watch('recurrence.endStrategy')
-  const lineItems = form.watch('lineItems')
-  const taxRate = form.watch('taxRate')
-
-  const totals = useMemo(
-    () => calculateTotals(lineItems ?? [], Number(taxRate) || 0),
-    [lineItems, taxRate],
-  )
-
-  function resetFromNewBill() {
-    setApiSource('new')
-    setSubmitIntent('create')
-    setSubmission(null)
-    form.reset(getNewBillDefaults())
-  }
-
-  function resetFromApiBill() {
-    setApiSource('api')
-    setSubmitIntent('update')
-    setSubmission(null)
-    form.reset(getBillDefaultsFromApi(sampleApiBill))
-  }
-
-  function switchBillType(nextBillType: BillFormValues['billType']) {
-    form.setValue('billType', nextBillType, {
-      shouldDirty: true,
-      shouldValidate: true,
-    })
-
-    if (nextBillType === 'repeating' && !form.getValues('recurrence')) {
-      form.setValue('recurrence', getDefaultRecurrence(), {
-        shouldDirty: true,
-        shouldValidate: true,
-      })
-    }
-  }
-
-  function submitBill(values: BillFormValues) {
-    const billId = apiSource === 'api' ? sampleApiBill.id : undefined
-    setSubmission({
-      endpoint:
-        submitIntent === 'create' ? '/api/bills' : `/api/bills/${billId}`,
-      method: submitIntent === 'create' ? 'POST' : 'PATCH',
-      body: toApiPayload(values),
-    })
-  }
+  const watchedValues = useWatch({ control: form.control })
+  const editorMode = useWatch({ control: form.control, name: 'editorMode' })
+  const billType = useWatch({ control: form.control, name: 'billType' })
+  const recurrenceEndStrategy = useWatch({
+    control: form.control,
+    name: 'recurrence.endStrategy',
+  })
+  const lineItems = useWatch({ control: form.control, name: 'lineItems' })
+  const taxRate = useWatch({ control: form.control, name: 'taxRate' })
+  const parsedWatchedValues = billFormSchema.safeParse(watchedValues)
+  const totals = calculateTotals(lineItems ?? [], Number(taxRate) || 0)
+  const submissionPreview = parsedWatchedValues.success
+    ? toApiSubmission(parsedWatchedValues.data)
+    : 'Complete the required fields to inspect the API submission.'
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-100">
@@ -243,16 +208,16 @@ function Home() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <button
-              className={buttonClass(apiSource === 'new')}
+              className={buttonClass(editorMode === 'new')}
               type="button"
-              onClick={resetFromNewBill}
+              onClick={() => form.reset(getNewBillDefaults())}
             >
               New bill defaults
             </button>
             <button
-              className={buttonClass(apiSource === 'api')}
+              className={buttonClass(editorMode === 'api')}
               type="button"
-              onClick={resetFromApiBill}
+              onClick={() => form.reset(getBillDefaultsFromApi(sampleApiBill))}
             >
               API bill defaults
             </button>
@@ -260,7 +225,9 @@ function Home() {
 
           <form
             className="mt-8 space-y-6"
-            onSubmit={form.handleSubmit(submitBill)}
+            onSubmit={form.handleSubmit((values) => {
+              console.info('Submitting bill', toApiSubmission(values))
+            })}
           >
             <Panel title="Bill details">
               <div className="grid gap-4 md:grid-cols-2">
@@ -320,13 +287,30 @@ function Home() {
                   active={billType === 'one_off'}
                   description="Collect this bill once with a fixed due date."
                   title="One-off"
-                  onClick={() => switchBillType('one_off')}
+                  onClick={() => {
+                    form.setValue('billType', 'one_off', {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }}
                 />
                 <ChoiceCard
                   active={billType === 'repeating'}
                   description="Generate future bills on a weekly, monthly, or yearly cadence."
                   title="Repeating"
-                  onClick={() => switchBillType('repeating')}
+                  onClick={() => {
+                    form.setValue('billType', 'repeating', {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+
+                    if (!form.getValues('recurrence')) {
+                      form.setValue('recurrence', getDefaultRecurrence(), {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  }}
                 />
               </div>
 
@@ -510,12 +494,7 @@ function Home() {
               <div className="flex flex-wrap gap-3">
                 <SelectInput
                   label="Submit as"
-                  value={submitIntent}
-                  onChange={(event) =>
-                    setSubmitIntent(
-                      event.currentTarget.value as ApiSubmitIntent,
-                    )
-                  }
+                  {...form.register('submitIntent')}
                 >
                   <option value="create">Create endpoint</option>
                   <option value="update">Update endpoint</option>
@@ -535,7 +514,7 @@ function Home() {
           <JsonCard
             title="Current source"
             value={
-              apiSource === 'api'
+              editorMode === 'api'
                 ? {
                     mode: 'editing existing bill',
                     source: sampleApiBill,
@@ -547,8 +526,8 @@ function Home() {
             }
           />
           <JsonCard
-            title="Last transformed submission"
-            value={submission ?? 'Submit the form to inspect the API payload.'}
+            title="Derived submission preview"
+            value={submissionPreview}
           />
         </aside>
       </div>
@@ -657,6 +636,8 @@ function JsonCard({ title, value }: { title: string; value: unknown }) {
 
 function getNewBillDefaults(): BillFormValues {
   return {
+    editorMode: 'new',
+    submitIntent: 'create',
     billType: 'one_off',
     customerName: '',
     customerEmail: '',
@@ -674,6 +655,8 @@ function getNewBillDefaults(): BillFormValues {
 
 function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
   const baseDefaults = {
+    editorMode: 'api' as const,
+    submitIntent: 'update' as const,
     customerName: apiBill.customer.name,
     customerEmail: apiBill.customer.email,
     status: apiBill.status,
@@ -776,6 +759,17 @@ function toApiPayload(values: BillFormValues) {
                 : null,
           }
         : null,
+  }
+}
+
+function toApiSubmission(values: BillFormValues): ApiSubmission {
+  const billId = values.editorMode === 'api' ? sampleApiBill.id : ':billId'
+
+  return {
+    endpoint:
+      values.submitIntent === 'create' ? '/api/bills' : `/api/bills/${billId}`,
+    method: values.submitIntent === 'create' ? 'POST' : 'PATCH',
+    body: toApiPayload(values),
   }
 }
 
