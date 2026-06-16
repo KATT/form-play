@@ -4,6 +4,33 @@ import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Textarea } from '@/components/ui/textarea'
+import {
   sampleApiBill,
   type ApiBill,
   type ApiBillPayload,
@@ -103,25 +130,23 @@ type BillFormValues = z.infer<typeof billFormSchema>
 
 function Home() {
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-100">
+    <main className="min-h-screen bg-background px-6 py-10 text-foreground">
       <div className="mx-auto max-w-7xl">
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-cyan-300">
-          React Hook Form + Zod
-        </p>
+        <Badge variant="secondary">React Hook Form + Zod</Badge>
         <h1 className="mt-3 text-4xl font-bold tracking-tight">
           Bill editor example
         </h1>
-        <p className="mt-4 max-w-3xl text-slate-300">
+        <p className="mt-4 max-w-3xl text-muted-foreground">
           This single route models create and edit bill forms side by side. Each
           accordion renders its own <code>UpsertBillForm</code>, with fresh
           defaults or defaults mapped from an imaginary API bill.
         </p>
 
-        <div className="mt-8 space-y-5">
+        <Accordion className="mt-8 gap-5" defaultValue={['create']} multiple>
           <AccordionSection
-            defaultOpen
             description="Starts from local defaults and submits to the create endpoint."
             title="Create a new bill"
+            value="create"
           >
             <UpsertBillForm
               defaultValues={getNewBillDefaults()}
@@ -132,6 +157,7 @@ function Home() {
           <AccordionSection
             description="Starts from an API response and submits to the update endpoint by default."
             title="Edit an existing bill"
+            value="edit"
           >
             <UpsertBillForm
               defaultValues={getBillDefaultsFromApi(sampleApiBill)}
@@ -139,7 +165,7 @@ function Home() {
               sourceValue={sampleApiBill}
             />
           </AccordionSection>
-        </div>
+        </Accordion>
       </div>
     </main>
   )
@@ -180,13 +206,13 @@ function UpsertBillForm({
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
       <section>
         <form
-          className="space-y-6"
+          className="flex flex-col gap-6"
           onSubmit={form.handleSubmit((values) => {
             console.info('Submitting bill', toApiSubmission(values))
           })}
         >
           <Panel title="Bill details">
-            <div className="grid gap-4 md:grid-cols-2">
+            <FieldGroup className="grid gap-4 md:grid-cols-2">
               <TextInput
                 error={form.formState.errors.customerName?.message}
                 label="Customer name"
@@ -204,9 +230,9 @@ function UpsertBillForm({
                 {...form.register('status')}
               >
                 {billStatuses.map((status) => (
-                  <option key={status} value={status}>
+                  <NativeSelectOption key={status} value={status}>
                     {titleCase(status)}
-                  </option>
+                  </NativeSelectOption>
                 ))}
               </SelectInput>
               <SelectInput
@@ -215,9 +241,9 @@ function UpsertBillForm({
                 {...form.register('currency')}
               >
                 {currencies.map((currency) => (
-                  <option key={currency} value={currency}>
+                  <NativeSelectOption key={currency} value={currency}>
                     {currency}
-                  </option>
+                  </NativeSelectOption>
                 ))}
               </SelectInput>
               <TextInput
@@ -234,7 +260,7 @@ function UpsertBillForm({
                   {...form.register('dueDate')}
                 />
               ) : null}
-            </div>
+            </FieldGroup>
           </Panel>
 
           <Panel title="Bill type">
@@ -271,140 +297,171 @@ function UpsertBillForm({
             </div>
 
             {billType === 'repeating' ? (
-              <div className="mt-5 grid gap-4 rounded-2xl border border-cyan-400/20 bg-cyan-400/5 p-4 md:grid-cols-2">
-                <SelectInput
-                  error={form.formState.errors.recurrence?.frequency?.message}
-                  label="Frequency"
-                  {...form.register('recurrence.frequency')}
-                >
-                  {recurrenceFrequencies.map((frequency) => (
-                    <option key={frequency} value={frequency}>
-                      {titleCase(frequency)}
-                    </option>
-                  ))}
-                </SelectInput>
-                <TextInput
-                  error={form.formState.errors.recurrence?.interval?.message}
-                  label="Every"
-                  min={1}
-                  type="number"
-                  {...form.register('recurrence.interval', {
-                    valueAsNumber: true,
-                  })}
-                />
-                <TextInput
-                  error={form.formState.errors.recurrence?.startsOn?.message}
-                  label="Starts on"
-                  type="date"
-                  {...form.register('recurrence.startsOn')}
-                />
-                <SelectInput
-                  error={form.formState.errors.recurrence?.endStrategy?.message}
-                  label="Ends"
-                  {...form.register('recurrence.endStrategy')}
-                >
-                  <option value="never">Never</option>
-                  <option value="on_date">On a date</option>
-                  <option value="after_occurrences">After occurrences</option>
-                </SelectInput>
-                {recurrenceEndStrategy === 'on_date' ? (
-                  <TextInput
-                    error={form.formState.errors.recurrence?.endsOn?.message}
-                    label="End date"
-                    type="date"
-                    {...form.register('recurrence.endsOn')}
-                  />
-                ) : null}
-                {recurrenceEndStrategy === 'after_occurrences' ? (
-                  <TextInput
-                    error={
-                      form.formState.errors.recurrence?.occurrenceCount?.message
-                    }
-                    label="Occurrences"
-                    min={2}
-                    type="number"
-                    {...form.register('recurrence.occurrenceCount', {
-                      setValueAs: (value) =>
-                        value === '' ? undefined : Number(value),
-                    })}
-                  />
-                ) : null}
-              </div>
+              <Card className="mt-5">
+                <CardContent>
+                  <FieldGroup className="grid gap-4 md:grid-cols-2">
+                    <SelectInput
+                      error={
+                        form.formState.errors.recurrence?.frequency?.message
+                      }
+                      label="Frequency"
+                      {...form.register('recurrence.frequency')}
+                    >
+                      {recurrenceFrequencies.map((frequency) => (
+                        <NativeSelectOption key={frequency} value={frequency}>
+                          {titleCase(frequency)}
+                        </NativeSelectOption>
+                      ))}
+                    </SelectInput>
+                    <TextInput
+                      error={
+                        form.formState.errors.recurrence?.interval?.message
+                      }
+                      label="Every"
+                      min={1}
+                      type="number"
+                      {...form.register('recurrence.interval', {
+                        valueAsNumber: true,
+                      })}
+                    />
+                    <TextInput
+                      error={
+                        form.formState.errors.recurrence?.startsOn?.message
+                      }
+                      label="Starts on"
+                      type="date"
+                      {...form.register('recurrence.startsOn')}
+                    />
+                    <SelectInput
+                      error={
+                        form.formState.errors.recurrence?.endStrategy?.message
+                      }
+                      label="Ends"
+                      {...form.register('recurrence.endStrategy')}
+                    >
+                      <NativeSelectOption value="never">
+                        Never
+                      </NativeSelectOption>
+                      <NativeSelectOption value="on_date">
+                        On a date
+                      </NativeSelectOption>
+                      <NativeSelectOption value="after_occurrences">
+                        After occurrences
+                      </NativeSelectOption>
+                    </SelectInput>
+                    {recurrenceEndStrategy === 'on_date' ? (
+                      <TextInput
+                        error={
+                          form.formState.errors.recurrence?.endsOn?.message
+                        }
+                        label="End date"
+                        type="date"
+                        {...form.register('recurrence.endsOn')}
+                      />
+                    ) : null}
+                    {recurrenceEndStrategy === 'after_occurrences' ? (
+                      <TextInput
+                        error={
+                          form.formState.errors.recurrence?.occurrenceCount
+                            ?.message
+                        }
+                        label="Occurrences"
+                        min={2}
+                        type="number"
+                        {...form.register('recurrence.occurrenceCount', {
+                          setValueAs: (value) =>
+                            value === '' ? undefined : Number(value),
+                        })}
+                      />
+                    ) : null}
+                  </FieldGroup>
+                </CardContent>
+              </Card>
             ) : null}
           </Panel>
 
           <Panel title="Line items">
-            <div className="space-y-4">
+            <div className="flex flex-col gap-4">
               {fields.map((field, index) => (
-                <div
-                  className="grid gap-3 rounded-2xl border border-white/10 bg-white/3 p-4 md:grid-cols-[1fr_110px_140px_auto]"
+                <Card
+                  className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]"
                   key={field.id}
                 >
-                  <TextInput
-                    error={
-                      form.formState.errors.lineItems?.[index]?.description
-                        ?.message
-                    }
-                    label="Description"
-                    {...form.register(`lineItems.${index}.description`)}
-                  />
-                  <TextInput
-                    error={
-                      form.formState.errors.lineItems?.[index]?.quantity
-                        ?.message
-                    }
-                    label="Qty"
-                    min={1}
-                    type="number"
-                    {...form.register(`lineItems.${index}.quantity`, {
-                      valueAsNumber: true,
-                    })}
-                  />
-                  <TextInput
-                    error={
-                      form.formState.errors.lineItems?.[index]?.unitPrice
-                        ?.message
-                    }
-                    label="Unit price"
-                    min={0}
-                    step="0.01"
-                    type="number"
-                    {...form.register(`lineItems.${index}.unitPrice`, {
-                      valueAsNumber: true,
-                    })}
-                  />
-                  <div className="flex items-end gap-3">
-                    <label className="flex h-11 items-center gap-2 rounded-xl border border-white/10 px-3 text-sm text-slate-300">
-                      <input
-                        className="size-4 accent-cyan-300"
-                        type="checkbox"
-                        {...form.register(`lineItems.${index}.taxable`)}
+                  <CardContent className="contents">
+                    <TextInput
+                      error={
+                        form.formState.errors.lineItems?.[index]?.description
+                          ?.message
+                      }
+                      label="Description"
+                      {...form.register(`lineItems.${index}.description`)}
+                    />
+                    <TextInput
+                      error={
+                        form.formState.errors.lineItems?.[index]?.quantity
+                          ?.message
+                      }
+                      label="Qty"
+                      min={1}
+                      type="number"
+                      {...form.register(`lineItems.${index}.quantity`, {
+                        valueAsNumber: true,
+                      })}
+                    />
+                    <TextInput
+                      error={
+                        form.formState.errors.lineItems?.[index]?.unitPrice
+                          ?.message
+                      }
+                      label="Unit price"
+                      min={0}
+                      step="0.01"
+                      type="number"
+                      {...form.register(`lineItems.${index}.unitPrice`, {
+                        valueAsNumber: true,
+                      })}
+                    />
+                    <div className="flex items-end gap-3">
+                      <CheckboxField
+                        checked={!!lineItems?.[index]?.taxable}
+                        label="Taxable"
+                        onCheckedChange={(checked) =>
+                          form.setValue(
+                            `lineItems.${index}.taxable`,
+                            Boolean(checked),
+                            {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            },
+                          )
+                        }
                       />
-                      Taxable
-                    </label>
-                    <button
-                      className="h-11 rounded-xl border border-rose-400/30 px-3 text-sm font-semibold text-rose-200 transition hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-40"
-                      disabled={fields.length === 1}
-                      type="button"
-                      onClick={() => remove(index)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
+                      <Button
+                        disabled={fields.length === 1}
+                        size="lg"
+                        type="button"
+                        variant="destructive"
+                        onClick={() => remove(index)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
-            <button
-              className="mt-4 rounded-xl border border-cyan-300/30 px-4 py-2 text-sm font-semibold text-cyan-200 transition hover:bg-cyan-300/10"
+            <Button
+              className="mt-4"
               type="button"
+              variant="outline"
               onClick={() => append(getDefaultLineItem())}
             >
               Add line item
-            </button>
+            </Button>
           </Panel>
 
           <Panel title="Payment and notes">
-            <div className="grid gap-4 md:grid-cols-2">
+            <FieldGroup className="grid gap-4 md:grid-cols-2">
               <TextInput
                 error={form.formState.errors.taxRate?.message}
                 label="Tax rate (%)"
@@ -413,52 +470,64 @@ function UpsertBillForm({
                 type="number"
                 {...form.register('taxRate', { valueAsNumber: true })}
               />
-              <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/3 p-4 text-sm text-slate-300">
-                <input
-                  className="size-4 accent-cyan-300"
-                  type="checkbox"
-                  {...form.register('collectPaymentAutomatically')}
-                />
-                Collect payment automatically
-              </label>
-            </div>
-            <label className="mt-4 block">
-              <span className="text-sm font-medium text-slate-200">Memo</span>
-              <textarea
-                className={inputClass}
-                rows={4}
-                {...form.register('memo')}
+              <CheckboxField
+                checked={!!watchedValues.collectPaymentAutomatically}
+                label="Collect payment automatically"
+                onCheckedChange={(checked) =>
+                  form.setValue(
+                    'collectPaymentAutomatically',
+                    Boolean(checked),
+                    {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    },
+                  )
+                }
               />
-              <ErrorMessage message={form.formState.errors.memo?.message} />
-            </label>
+            </FieldGroup>
+            <TextareaInput
+              className="mt-4"
+              error={form.formState.errors.memo?.message}
+              label="Memo"
+              rows={4}
+              {...form.register('memo')}
+            />
           </Panel>
 
-          <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-white/10 bg-white/4 p-5">
-            <div>
-              <p className="text-sm text-slate-400">Bill total</p>
-              <p className="text-3xl font-bold">{money.format(totals.total)}</p>
-              <p className="text-sm text-slate-400">
-                {money.format(totals.subtotal)} subtotal +{' '}
-                {money.format(totals.tax)} tax
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <SelectInput label="Submit as" {...form.register('submitIntent')}>
-                <option value="create">Create endpoint</option>
-                <option value="update">Update endpoint</option>
-              </SelectInput>
-              <button
-                className="self-end rounded-xl bg-cyan-300 px-5 py-3 font-bold text-slate-950 transition hover:bg-cyan-200"
-                type="submit"
-              >
-                Transform and submit
-              </button>
-            </div>
-          </div>
+          <Card>
+            <CardContent className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Bill total</p>
+                <p className="text-3xl font-bold">
+                  {money.format(totals.total)}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {money.format(totals.subtotal)} subtotal +{' '}
+                  {money.format(totals.tax)} tax
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <SelectInput
+                  label="Submit as"
+                  {...form.register('submitIntent')}
+                >
+                  <NativeSelectOption value="create">
+                    Create endpoint
+                  </NativeSelectOption>
+                  <NativeSelectOption value="update">
+                    Update endpoint
+                  </NativeSelectOption>
+                </SelectInput>
+                <Button className="self-end" size="lg" type="submit">
+                  Transform and submit
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </form>
       </section>
 
-      <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+      <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
         <JsonCard title={sourceTitle} value={sourceValue} />
         <JsonCard
           title="Derived submission preview"
@@ -471,33 +540,27 @@ function UpsertBillForm({
 
 function AccordionSection({
   children,
-  defaultOpen = false,
   description,
   title,
+  value,
 }: {
   children: React.ReactNode
-  defaultOpen?: boolean
   description: string
   title: string
+  value: string
 }) {
   return (
-    <details
-      className="group rounded-3xl border border-white/10 bg-white/4 shadow-2xl shadow-black/20"
-      open={defaultOpen}
-    >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 marker:hidden">
+    <AccordionItem value={value}>
+      <AccordionTrigger>
         <span>
           <span className="block text-lg font-semibold">{title}</span>
-          <span className="mt-1 block text-sm text-slate-400">
+          <span className="mt-1 block text-sm text-muted-foreground">
             {description}
           </span>
         </span>
-        <span className="rounded-full border border-cyan-300/30 px-3 py-1 text-sm font-semibold text-cyan-200 transition group-open:rotate-180">
-          Open
-        </span>
-      </summary>
-      <div className="border-t border-white/10 p-5">{children}</div>
-    </details>
+      </AccordionTrigger>
+      <AccordionContent>{children}</AccordionContent>
+    </AccordionItem>
   )
 }
 
@@ -509,10 +572,12 @@ function Panel({
   title: string
 }) {
   return (
-    <section className="rounded-3xl border border-white/10 bg-white/4 p-5 shadow-2xl shadow-black/20">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <div className="mt-4">{children}</div>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   )
 }
 
@@ -528,19 +593,17 @@ function ChoiceCard({
   title: string
 }) {
   return (
-    <button
-      className={[
-        'rounded-2xl border p-4 text-left transition',
-        active
-          ? 'border-cyan-300 bg-cyan-300/10 text-cyan-100'
-          : 'border-white/10 bg-white/3 text-slate-300 hover:bg-white/6',
-      ].join(' ')}
+    <Button
+      className="h-auto justify-start p-4 text-left"
       type="button"
+      variant={active ? 'secondary' : 'outline'}
       onClick={onClick}
     >
       <span className="block text-base font-semibold">{title}</span>
-      <span className="mt-1 block text-sm">{description}</span>
-    </button>
+      <span className="mt-1 block text-sm text-muted-foreground">
+        {description}
+      </span>
+    </Button>
   )
 }
 
@@ -553,11 +616,11 @@ function TextInput({
   label: string
 }) {
   return (
-    <label className="block">
-      <span className="text-sm font-medium text-slate-200">{label}</span>
-      <input className={inputClass} {...props} />
-      <ErrorMessage message={error} />
-    </label>
+    <Field data-invalid={!!error}>
+      <FieldLabel>{label}</FieldLabel>
+      <Input aria-invalid={!!error} {...props} />
+      <FieldError>{error}</FieldError>
+    </Field>
   )
 }
 
@@ -566,37 +629,72 @@ function SelectInput({
   error,
   label,
   ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement> & {
+}: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> & {
   error?: string
   label: string
 }) {
   return (
-    <label className="block">
-      <span className="text-sm font-medium text-slate-200">{label}</span>
-      <select className={inputClass} {...props}>
+    <Field data-invalid={!!error}>
+      <FieldLabel>{label}</FieldLabel>
+      <NativeSelect aria-invalid={!!error} className="w-full" {...props}>
         {children}
-      </select>
-      <ErrorMessage message={error} />
-    </label>
+      </NativeSelect>
+      <FieldError>{error}</FieldError>
+    </Field>
   )
 }
 
-function ErrorMessage({ message }: { message?: string }) {
-  if (!message) return null
+function TextareaInput({
+  className,
+  error,
+  label,
+  ...props
+}: React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  className?: string
+  error?: string
+  label: string
+}) {
+  return (
+    <Field className={className} data-invalid={!!error}>
+      <FieldLabel>{label}</FieldLabel>
+      <Textarea aria-invalid={!!error} {...props} />
+      <FieldError>{error}</FieldError>
+    </Field>
+  )
+}
 
-  return <p className="mt-1 text-sm text-rose-300">{message}</p>
+function CheckboxField({
+  checked,
+  label,
+  onCheckedChange,
+}: {
+  checked: boolean
+  label: string
+  onCheckedChange: (checked: boolean) => void
+}) {
+  return (
+    <Field orientation="horizontal">
+      <Checkbox checked={checked} onCheckedChange={onCheckedChange} />
+      <FieldDescription>{label}</FieldDescription>
+    </Field>
+  )
 }
 
 function JsonCard({ title, value }: { title: string; value: unknown }) {
   return (
-    <section className="overflow-hidden rounded-3xl border border-white/10 bg-slate-900 shadow-2xl shadow-black/20">
-      <div className="border-b border-white/10 px-5 py-4">
-        <h2 className="font-semibold">{title}</h2>
-      </div>
-      <pre className="max-h-[520px] overflow-auto p-5 text-xs leading-relaxed text-slate-300">
-        {JSON.stringify(value, null, 2)}
-      </pre>
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>Live JSON preview</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-[520px] rounded-lg border bg-muted/30">
+          <pre className="p-4 text-xs leading-relaxed">
+            {JSON.stringify(value, null, 2)}
+          </pre>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -817,6 +915,3 @@ function titleCase(value: string) {
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
-
-const inputClass =
-  'mt-1 block w-full rounded-xl border border-white/10 bg-slate-950/80 px-3 py-2.5 text-slate-100 outline-none transition placeholder:text-slate-500 focus:border-cyan-300 focus:ring-2 focus:ring-cyan-300/20'
