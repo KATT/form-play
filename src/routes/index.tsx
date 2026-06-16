@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createFileRoute } from '@tanstack/react-router'
+import { useId } from 'react'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -21,7 +22,6 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -136,35 +136,52 @@ function Home() {
         <h1 className="mt-3 text-4xl font-bold tracking-tight">
           Bill editor example
         </h1>
-        <p className="mt-4 max-w-3xl text-muted-foreground">
+        <p className="mt-4 max-w-3xl text-pretty text-muted-foreground">
           This single route models create and edit bill forms side by side. Each
           accordion renders its own <code>UpsertBillForm</code>, with fresh
           defaults or defaults mapped from an imaginary API bill.
         </p>
 
         <Accordion className="mt-8 gap-5" defaultValue={['create']} multiple>
-          <AccordionSection
-            description="Starts from local defaults and submits to the create endpoint."
-            title="Create a new bill"
-            value="create"
-          >
-            <UpsertBillForm
-              defaultValues={getNewBillDefaults()}
-              sourceTitle="New bill defaults"
-              sourceValue={getNewBillDefaults()}
-            />
-          </AccordionSection>
-          <AccordionSection
-            description="Starts from an API response and submits to the update endpoint by default."
-            title="Edit an existing bill"
-            value="edit"
-          >
-            <UpsertBillForm
-              defaultValues={getBillDefaultsFromApi(sampleApiBill)}
-              sourceTitle="API bill response"
-              sourceValue={sampleApiBill}
-            />
-          </AccordionSection>
+          <AccordionItem value="create">
+            <AccordionTrigger>
+              <span>
+                <span className="block text-lg font-semibold">
+                  Create a New Bill
+                </span>
+                <span className="mt-1 block text-sm text-muted-foreground">
+                  Starts from local defaults and submits to the create endpoint.
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <UpsertBillForm
+                defaultValues={getNewBillDefaults()}
+                sourceTitle="New bill defaults"
+                sourceValue={getNewBillDefaults()}
+              />
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="edit">
+            <AccordionTrigger>
+              <span>
+                <span className="block text-lg font-semibold">
+                  Edit an Existing Bill
+                </span>
+                <span className="mt-1 block text-sm text-muted-foreground">
+                  Starts from an API response and submits to the update endpoint
+                  by default.
+                </span>
+              </span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <UpsertBillForm
+                defaultValues={getBillDefaultsFromApi(sampleApiBill)}
+                sourceTitle="API bill response"
+                sourceValue={sampleApiBill}
+              />
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </div>
     </main>
@@ -211,288 +228,308 @@ function UpsertBillForm({
             console.info('Submitting bill', toApiSubmission(values))
           })}
         >
-          <Panel title="Bill details">
-            <FieldGroup className="grid gap-4 md:grid-cols-2">
-              <TextInput
-                error={form.formState.errors.customerName?.message}
-                label="Customer name"
-                {...form.register('customerName')}
-              />
-              <TextInput
-                error={form.formState.errors.customerEmail?.message}
-                label="Customer email"
-                type="email"
-                {...form.register('customerEmail')}
-              />
-              <SelectInput
-                error={form.formState.errors.status?.message}
-                label="Status"
-                {...form.register('status')}
-              >
-                {billStatuses.map((status) => (
-                  <NativeSelectOption key={status} value={status}>
-                    {titleCase(status)}
-                  </NativeSelectOption>
-                ))}
-              </SelectInput>
-              <SelectInput
-                error={form.formState.errors.currency?.message}
-                label="Currency"
-                {...form.register('currency')}
-              >
-                {currencies.map((currency) => (
-                  <NativeSelectOption key={currency} value={currency}>
-                    {currency}
-                  </NativeSelectOption>
-                ))}
-              </SelectInput>
-              <TextInput
-                error={form.formState.errors.issueDate?.message}
-                label="Issue date"
-                type="date"
-                {...form.register('issueDate')}
-              />
-              {billType === 'one_off' ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Bill Details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FieldGroup className="grid gap-4 md:grid-cols-2">
                 <TextInput
-                  error={form.formState.errors.dueDate?.message}
-                  label="Due date"
-                  type="date"
-                  {...form.register('dueDate')}
+                  error={form.formState.errors.customerName?.message}
+                  label="Customer name"
+                  autoComplete="organization"
+                  {...form.register('customerName')}
                 />
-              ) : null}
-            </FieldGroup>
-          </Panel>
+                <TextInput
+                  error={form.formState.errors.customerEmail?.message}
+                  label="Customer email"
+                  autoComplete="email"
+                  spellCheck={false}
+                  type="email"
+                  {...form.register('customerEmail')}
+                />
+                <SelectInput
+                  error={form.formState.errors.status?.message}
+                  label="Status"
+                  {...form.register('status')}
+                >
+                  {billStatuses.map((status) => (
+                    <NativeSelectOption key={status} value={status}>
+                      {titleCase(status)}
+                    </NativeSelectOption>
+                  ))}
+                </SelectInput>
+                <SelectInput
+                  error={form.formState.errors.currency?.message}
+                  label="Currency"
+                  {...form.register('currency')}
+                >
+                  {currencies.map((currency) => (
+                    <NativeSelectOption key={currency} value={currency}>
+                      {currency}
+                    </NativeSelectOption>
+                  ))}
+                </SelectInput>
+                <TextInput
+                  error={form.formState.errors.issueDate?.message}
+                  label="Issue date"
+                  type="date"
+                  {...form.register('issueDate')}
+                />
+                {billType === 'one_off' ? (
+                  <TextInput
+                    error={form.formState.errors.dueDate?.message}
+                    label="Due date"
+                    type="date"
+                    {...form.register('dueDate')}
+                  />
+                ) : null}
+              </FieldGroup>
+            </CardContent>
+          </Card>
 
-          <Panel title="Bill type">
-            <div className="grid gap-4 md:grid-cols-2">
-              <ChoiceCard
-                active={billType === 'one_off'}
-                description="Collect this bill once with a fixed due date."
-                title="One-off"
-                onClick={() => {
-                  form.setValue('billType', 'one_off', {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  })
-                }}
-              />
-              <ChoiceCard
-                active={billType === 'repeating'}
-                description="Generate future bills on a weekly, monthly, or yearly cadence."
-                title="Repeating"
-                onClick={() => {
-                  form.setValue('billType', 'repeating', {
-                    shouldDirty: true,
-                    shouldValidate: true,
-                  })
-
-                  if (!form.getValues('recurrence')) {
-                    form.setValue('recurrence', getDefaultRecurrence(), {
+          <Card>
+            <CardHeader>
+              <CardTitle>Bill Type</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <ChoiceCard
+                  active={billType === 'one_off'}
+                  description="Collect this bill once with a fixed due date."
+                  title="One-off"
+                  onClick={() => {
+                    form.setValue('billType', 'one_off', {
                       shouldDirty: true,
                       shouldValidate: true,
                     })
-                  }
-                }}
-              />
-            </div>
-
-            {billType === 'repeating' ? (
-              <Card className="mt-5">
-                <CardContent>
-                  <FieldGroup className="grid gap-4 md:grid-cols-2">
-                    <SelectInput
-                      error={
-                        form.formState.errors.recurrence?.frequency?.message
-                      }
-                      label="Frequency"
-                      {...form.register('recurrence.frequency')}
-                    >
-                      {recurrenceFrequencies.map((frequency) => (
-                        <NativeSelectOption key={frequency} value={frequency}>
-                          {titleCase(frequency)}
-                        </NativeSelectOption>
-                      ))}
-                    </SelectInput>
-                    <TextInput
-                      error={
-                        form.formState.errors.recurrence?.interval?.message
-                      }
-                      label="Every"
-                      min={1}
-                      type="number"
-                      {...form.register('recurrence.interval', {
-                        valueAsNumber: true,
-                      })}
-                    />
-                    <TextInput
-                      error={
-                        form.formState.errors.recurrence?.startsOn?.message
-                      }
-                      label="Starts on"
-                      type="date"
-                      {...form.register('recurrence.startsOn')}
-                    />
-                    <SelectInput
-                      error={
-                        form.formState.errors.recurrence?.endStrategy?.message
-                      }
-                      label="Ends"
-                      {...form.register('recurrence.endStrategy')}
-                    >
-                      <NativeSelectOption value="never">
-                        Never
-                      </NativeSelectOption>
-                      <NativeSelectOption value="on_date">
-                        On a date
-                      </NativeSelectOption>
-                      <NativeSelectOption value="after_occurrences">
-                        After occurrences
-                      </NativeSelectOption>
-                    </SelectInput>
-                    {recurrenceEndStrategy === 'on_date' ? (
-                      <TextInput
-                        error={
-                          form.formState.errors.recurrence?.endsOn?.message
-                        }
-                        label="End date"
-                        type="date"
-                        {...form.register('recurrence.endsOn')}
-                      />
-                    ) : null}
-                    {recurrenceEndStrategy === 'after_occurrences' ? (
-                      <TextInput
-                        error={
-                          form.formState.errors.recurrence?.occurrenceCount
-                            ?.message
-                        }
-                        label="Occurrences"
-                        min={2}
-                        type="number"
-                        {...form.register('recurrence.occurrenceCount', {
-                          setValueAs: (value) =>
-                            value === '' ? undefined : Number(value),
-                        })}
-                      />
-                    ) : null}
-                  </FieldGroup>
-                </CardContent>
-              </Card>
-            ) : null}
-          </Panel>
-
-          <Panel title="Line items">
-            <div className="flex flex-col gap-4">
-              {fields.map((field, index) => (
-                <Card
-                  className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]"
-                  key={field.id}
-                >
-                  <CardContent className="contents">
-                    <TextInput
-                      error={
-                        form.formState.errors.lineItems?.[index]?.description
-                          ?.message
-                      }
-                      label="Description"
-                      {...form.register(`lineItems.${index}.description`)}
-                    />
-                    <TextInput
-                      error={
-                        form.formState.errors.lineItems?.[index]?.quantity
-                          ?.message
-                      }
-                      label="Qty"
-                      min={1}
-                      type="number"
-                      {...form.register(`lineItems.${index}.quantity`, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                    <TextInput
-                      error={
-                        form.formState.errors.lineItems?.[index]?.unitPrice
-                          ?.message
-                      }
-                      label="Unit price"
-                      min={0}
-                      step="0.01"
-                      type="number"
-                      {...form.register(`lineItems.${index}.unitPrice`, {
-                        valueAsNumber: true,
-                      })}
-                    />
-                    <div className="flex items-end gap-3">
-                      <CheckboxField
-                        checked={!!lineItems?.[index]?.taxable}
-                        label="Taxable"
-                        onCheckedChange={(checked) =>
-                          form.setValue(
-                            `lineItems.${index}.taxable`,
-                            Boolean(checked),
-                            {
-                              shouldDirty: true,
-                              shouldValidate: true,
-                            },
-                          )
-                        }
-                      />
-                      <Button
-                        disabled={fields.length === 1}
-                        size="lg"
-                        type="button"
-                        variant="destructive"
-                        onClick={() => remove(index)}
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <Button
-              className="mt-4"
-              type="button"
-              variant="outline"
-              onClick={() => append(getDefaultLineItem())}
-            >
-              Add line item
-            </Button>
-          </Panel>
-
-          <Panel title="Payment and notes">
-            <FieldGroup className="grid gap-4 md:grid-cols-2">
-              <TextInput
-                error={form.formState.errors.taxRate?.message}
-                label="Tax rate (%)"
-                min={0}
-                step="0.01"
-                type="number"
-                {...form.register('taxRate', { valueAsNumber: true })}
-              />
-              <CheckboxField
-                checked={!!watchedValues.collectPaymentAutomatically}
-                label="Collect payment automatically"
-                onCheckedChange={(checked) =>
-                  form.setValue(
-                    'collectPaymentAutomatically',
-                    Boolean(checked),
-                    {
+                  }}
+                />
+                <ChoiceCard
+                  active={billType === 'repeating'}
+                  description="Generate future bills on a weekly, monthly, or yearly cadence."
+                  title="Repeating"
+                  onClick={() => {
+                    form.setValue('billType', 'repeating', {
                       shouldDirty: true,
                       shouldValidate: true,
-                    },
-                  )
-                }
+                    })
+
+                    if (!form.getValues('recurrence')) {
+                      form.setValue('recurrence', getDefaultRecurrence(), {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                  }}
+                />
+              </div>
+
+              {billType === 'repeating' ? (
+                <Card className="mt-5">
+                  <CardContent>
+                    <FieldGroup className="grid gap-4 md:grid-cols-2">
+                      <SelectInput
+                        error={
+                          form.formState.errors.recurrence?.frequency?.message
+                        }
+                        label="Frequency"
+                        {...form.register('recurrence.frequency')}
+                      >
+                        {recurrenceFrequencies.map((frequency) => (
+                          <NativeSelectOption key={frequency} value={frequency}>
+                            {titleCase(frequency)}
+                          </NativeSelectOption>
+                        ))}
+                      </SelectInput>
+                      <TextInput
+                        error={
+                          form.formState.errors.recurrence?.interval?.message
+                        }
+                        label="Every"
+                        min={1}
+                        type="number"
+                        {...form.register('recurrence.interval', {
+                          valueAsNumber: true,
+                        })}
+                      />
+                      <TextInput
+                        error={
+                          form.formState.errors.recurrence?.startsOn?.message
+                        }
+                        label="Starts on"
+                        type="date"
+                        {...form.register('recurrence.startsOn')}
+                      />
+                      <SelectInput
+                        error={
+                          form.formState.errors.recurrence?.endStrategy?.message
+                        }
+                        label="Ends"
+                        {...form.register('recurrence.endStrategy')}
+                      >
+                        <NativeSelectOption value="never">
+                          Never
+                        </NativeSelectOption>
+                        <NativeSelectOption value="on_date">
+                          On a date
+                        </NativeSelectOption>
+                        <NativeSelectOption value="after_occurrences">
+                          After occurrences
+                        </NativeSelectOption>
+                      </SelectInput>
+                      {recurrenceEndStrategy === 'on_date' ? (
+                        <TextInput
+                          error={
+                            form.formState.errors.recurrence?.endsOn?.message
+                          }
+                          label="End date"
+                          type="date"
+                          {...form.register('recurrence.endsOn')}
+                        />
+                      ) : null}
+                      {recurrenceEndStrategy === 'after_occurrences' ? (
+                        <TextInput
+                          error={
+                            form.formState.errors.recurrence?.occurrenceCount
+                              ?.message
+                          }
+                          label="Occurrences"
+                          min={2}
+                          type="number"
+                          {...form.register('recurrence.occurrenceCount', {
+                            setValueAs: (value) =>
+                              value === '' ? undefined : Number(value),
+                          })}
+                        />
+                      ) : null}
+                    </FieldGroup>
+                  </CardContent>
+                </Card>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Line Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-4">
+                {fields.map((field, index) => (
+                  <Card key={field.id}>
+                    <CardContent className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]">
+                      <TextInput
+                        error={
+                          form.formState.errors.lineItems?.[index]?.description
+                            ?.message
+                        }
+                        label="Description"
+                        {...form.register(`lineItems.${index}.description`)}
+                      />
+                      <TextInput
+                        error={
+                          form.formState.errors.lineItems?.[index]?.quantity
+                            ?.message
+                        }
+                        label="Qty"
+                        min={1}
+                        type="number"
+                        {...form.register(`lineItems.${index}.quantity`, {
+                          valueAsNumber: true,
+                        })}
+                      />
+                      <TextInput
+                        error={
+                          form.formState.errors.lineItems?.[index]?.unitPrice
+                            ?.message
+                        }
+                        label="Unit price"
+                        min={0}
+                        step="0.01"
+                        type="number"
+                        {...form.register(`lineItems.${index}.unitPrice`, {
+                          valueAsNumber: true,
+                        })}
+                      />
+                      <div className="flex items-end gap-3">
+                        <CheckboxField
+                          checked={!!lineItems?.[index]?.taxable}
+                          label="Taxable"
+                          onCheckedChange={(checked) =>
+                            form.setValue(
+                              `lineItems.${index}.taxable`,
+                              Boolean(checked),
+                              {
+                                shouldDirty: true,
+                                shouldValidate: true,
+                              },
+                            )
+                          }
+                        />
+                        <Button
+                          disabled={fields.length === 1}
+                          size="lg"
+                          type="button"
+                          variant="destructive"
+                          onClick={() => remove(index)}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+              <Button
+                className="mt-4"
+                type="button"
+                variant="outline"
+                onClick={() => append(getDefaultLineItem())}
+              >
+                Add Line Item
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Payment & Notes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FieldGroup className="grid gap-4 md:grid-cols-2">
+                <TextInput
+                  error={form.formState.errors.taxRate?.message}
+                  label="Tax rate (%)"
+                  min={0}
+                  step="0.01"
+                  type="number"
+                  {...form.register('taxRate', { valueAsNumber: true })}
+                />
+                <CheckboxField
+                  checked={!!watchedValues.collectPaymentAutomatically}
+                  label="Collect payment automatically"
+                  onCheckedChange={(checked) =>
+                    form.setValue(
+                      'collectPaymentAutomatically',
+                      Boolean(checked),
+                      {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      },
+                    )
+                  }
+                />
+              </FieldGroup>
+              <TextareaInput
+                className="mt-4"
+                error={form.formState.errors.memo?.message}
+                label="Memo"
+                rows={4}
+                {...form.register('memo')}
               />
-            </FieldGroup>
-            <TextareaInput
-              className="mt-4"
-              error={form.formState.errors.memo?.message}
-              label="Memo"
-              rows={4}
-              {...form.register('memo')}
-            />
-          </Panel>
+            </CardContent>
+          </Card>
 
           <Card>
             <CardContent className="flex flex-wrap items-center justify-between gap-4">
@@ -512,14 +549,14 @@ function UpsertBillForm({
                   {...form.register('submitIntent')}
                 >
                   <NativeSelectOption value="create">
-                    Create endpoint
+                    Create Endpoint
                   </NativeSelectOption>
                   <NativeSelectOption value="update">
-                    Update endpoint
+                    Update Endpoint
                   </NativeSelectOption>
                 </SelectInput>
                 <Button className="self-end" size="lg" type="submit">
-                  Transform and submit
+                  Transform & Submit
                 </Button>
               </div>
             </CardContent>
@@ -535,49 +572,6 @@ function UpsertBillForm({
         />
       </aside>
     </div>
-  )
-}
-
-function AccordionSection({
-  children,
-  description,
-  title,
-  value,
-}: {
-  children: React.ReactNode
-  description: string
-  title: string
-  value: string
-}) {
-  return (
-    <AccordionItem value={value}>
-      <AccordionTrigger>
-        <span>
-          <span className="block text-lg font-semibold">{title}</span>
-          <span className="mt-1 block text-sm text-muted-foreground">
-            {description}
-          </span>
-        </span>
-      </AccordionTrigger>
-      <AccordionContent>{children}</AccordionContent>
-    </AccordionItem>
-  )
-}
-
-function Panel({
-  children,
-  title,
-}: {
-  children: React.ReactNode
-  title: string
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
   )
 }
 
@@ -609,16 +603,20 @@ function ChoiceCard({
 
 function TextInput({
   error,
+  id,
   label,
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & {
   error?: string
   label: string
 }) {
+  const generatedId = useId()
+  const inputId = id ?? generatedId
+
   return (
     <Field data-invalid={!!error}>
-      <FieldLabel>{label}</FieldLabel>
-      <Input aria-invalid={!!error} {...props} />
+      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+      <Input aria-invalid={!!error} id={inputId} {...props} />
       <FieldError>{error}</FieldError>
     </Field>
   )
@@ -627,16 +625,25 @@ function TextInput({
 function SelectInput({
   children,
   error,
+  id,
   label,
   ...props
 }: Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'size'> & {
   error?: string
   label: string
 }) {
+  const generatedId = useId()
+  const selectId = id ?? generatedId
+
   return (
     <Field data-invalid={!!error}>
-      <FieldLabel>{label}</FieldLabel>
-      <NativeSelect aria-invalid={!!error} className="w-full" {...props}>
+      <FieldLabel htmlFor={selectId}>{label}</FieldLabel>
+      <NativeSelect
+        aria-invalid={!!error}
+        className="w-full"
+        id={selectId}
+        {...props}
+      >
         {children}
       </NativeSelect>
       <FieldError>{error}</FieldError>
@@ -647,6 +654,7 @@ function SelectInput({
 function TextareaInput({
   className,
   error,
+  id,
   label,
   ...props
 }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
@@ -654,10 +662,13 @@ function TextareaInput({
   error?: string
   label: string
 }) {
+  const generatedId = useId()
+  const textareaId = id ?? generatedId
+
   return (
     <Field className={className} data-invalid={!!error}>
-      <FieldLabel>{label}</FieldLabel>
-      <Textarea aria-invalid={!!error} {...props} />
+      <FieldLabel htmlFor={textareaId}>{label}</FieldLabel>
+      <Textarea aria-invalid={!!error} id={textareaId} {...props} />
       <FieldError>{error}</FieldError>
     </Field>
   )
@@ -674,8 +685,10 @@ function CheckboxField({
 }) {
   return (
     <Field orientation="horizontal">
-      <Checkbox checked={checked} onCheckedChange={onCheckedChange} />
-      <FieldDescription>{label}</FieldDescription>
+      <FieldLabel className="items-center">
+        <Checkbox checked={checked} onCheckedChange={onCheckedChange} />
+        {label}
+      </FieldLabel>
     </Field>
   )
 }
