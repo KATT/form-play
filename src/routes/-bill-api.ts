@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 export type ApiBillKind = 'one_off' | 'repeating'
 export type ApiBillStatus = 'draft' | 'scheduled' | 'sent' | 'paid'
 export type ApiCurrency = 'USD' | 'EUR' | 'GBP'
@@ -67,6 +69,40 @@ export type ApiSubmission = {
   method: 'POST' | 'PATCH'
   body: ApiBillPayload
 }
+
+export const apiBillPayloadSchema: z.ZodType<ApiBillPayload, ApiBillPayload> =
+  z.object({
+    kind: z.enum(['one_off', 'repeating']),
+    customer: z.object({
+      name: z.string(),
+      email: z.string(),
+    }),
+    status: z.enum(['draft', 'scheduled', 'sent', 'paid']),
+    issue_date: z.string(),
+    due_date: z.string().nullable(),
+    currency: z.enum(['USD', 'EUR', 'GBP']),
+    line_items: z.array(
+      z.object({
+        id: z.string().optional(),
+        description: z.string(),
+        quantity: z.number(),
+        unit_amount_cents: z.number(),
+        taxable: z.boolean(),
+      }),
+    ),
+    tax_rate_bps: z.number(),
+    auto_collect: z.boolean(),
+    memo: z.string().nullable(),
+    schedule: z
+      .object({
+        frequency: z.enum(['weekly', 'monthly', 'yearly']),
+        interval: z.number(),
+        starts_on: z.string(),
+        ends_on: z.string().nullable(),
+        max_occurrences: z.number().nullable(),
+      })
+      .nullable(),
+  })
 
 export const sampleApiBill: ApiBill = {
   id: 'bill_42',
