@@ -189,6 +189,38 @@ const billFormSchema = z.discriminatedUnion('billType', [
 
 type BillFormValues = z.infer<typeof billFormSchema>
 type BillForm = UseFormReturn<BillFormValues>
+type BillFormFieldName = FieldPath<BillFormValues>
+type ControlledInputProps = Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
+> & {
+  error?: string
+  form: BillForm
+  label: string
+  name: BillFormFieldName
+  setValueAs?: (value: string) => unknown
+  valueAsNumber?: boolean
+}
+type ControlledSelectProps = Omit<
+  React.SelectHTMLAttributes<HTMLSelectElement>,
+  'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'size' | 'value'
+> & {
+  children: React.ReactNode
+  error?: string
+  form: BillForm
+  label: string
+  name: BillFormFieldName
+}
+type ControlledTextareaProps = Omit<
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+  'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
+> & {
+  className?: string
+  error?: string
+  form: BillForm
+  label: string
+  name: BillFormFieldName
+}
 
 function Home() {
   const search = Route.useSearch()
@@ -320,58 +352,64 @@ function BillDetailsSection({ form }: { form: BillForm }) {
       </CardHeader>
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
-          <TextInput
+          <ControlledTextInput
             error={form.formState.errors.customerName?.message}
+            form={form}
             label="Customer name"
+            name="customerName"
             autoComplete="organization"
-            {...form.register('customerName')}
           />
-          <TextInput
+          <ControlledTextInput
             error={form.formState.errors.customerEmail?.message}
+            form={form}
             label="Customer email"
+            name="customerEmail"
             autoComplete="email"
             spellCheck={false}
             type="email"
-            {...form.register('customerEmail')}
           />
-          <SelectInput
+          <ControlledSelectInput
             error={form.formState.errors.status?.message}
+            form={form}
             label="Status"
-            {...form.register('status')}
+            name="status"
           >
             {billStatuses.map((status) => (
               <NativeSelectOption key={status} value={status}>
                 {titleCase(status)}
               </NativeSelectOption>
             ))}
-          </SelectInput>
-          <SelectInput
+          </ControlledSelectInput>
+          <ControlledSelectInput
             error={form.formState.errors.currency?.message}
+            form={form}
             label="Currency"
-            {...form.register('currency')}
+            name="currency"
           >
             {currencies.map((currency) => (
               <NativeSelectOption key={currency} value={currency}>
                 {currency}
               </NativeSelectOption>
             ))}
-          </SelectInput>
-          <TextInput
+          </ControlledSelectInput>
+          <ControlledTextInput
             error={form.formState.errors.issueDate?.message}
+            form={form}
             label="Issue date"
+            name="issueDate"
             type="date"
-            {...form.register('issueDate')}
           />
           <FormConditional
             control={form.control}
             name="billType"
             render={(billType) => billType === 'one_off'}
           >
-            <TextInput
+            <ControlledTextInput
               error={form.formState.errors.dueDate?.message}
+              form={form}
               label="Due date"
+              name="dueDate"
               type="date"
-              {...form.register('dueDate')}
             />
           </FormConditional>
         </FieldGroup>
@@ -416,37 +454,40 @@ function BillTypeSection({ form }: { form: BillForm }) {
           <Card className="mt-5">
             <CardContent>
               <FieldGroup className="grid gap-4 md:grid-cols-2">
-                <SelectInput
+                <ControlledSelectInput
                   error={form.formState.errors.recurrence?.frequency?.message}
+                  form={form}
                   label="Frequency"
-                  {...form.register('recurrence.frequency')}
+                  name="recurrence.frequency"
                 >
                   {recurrenceFrequencies.map((frequency) => (
                     <NativeSelectOption key={frequency} value={frequency}>
                       {titleCase(frequency)}
                     </NativeSelectOption>
                   ))}
-                </SelectInput>
-                <TextInput
+                </ControlledSelectInput>
+                <ControlledTextInput
                   error={form.formState.errors.recurrence?.interval?.message}
+                  form={form}
                   label="Every"
                   min={1}
+                  name="recurrence.interval"
                   type="number"
-                  {...form.register('recurrence.interval', {
-                    valueAsNumber: true,
-                  })}
+                  valueAsNumber
                 />
-                <TextInput
+                <ControlledTextInput
                   error={form.formState.errors.recurrence?.startsOn?.message}
+                  form={form}
                   label="Starts on"
+                  name="recurrence.startsOn"
                   type="date"
-                  {...form.register('recurrence.startsOn')}
                 />
                 <RecurrenceFrequencyFields form={form} />
-                <SelectInput
+                <ControlledSelectInput
                   error={form.formState.errors.recurrence?.endStrategy?.message}
+                  form={form}
                   label="Ends"
-                  {...form.register('recurrence.endStrategy')}
+                  name="recurrence.endStrategy"
                 >
                   <NativeSelectOption value="never">Never</NativeSelectOption>
                   <NativeSelectOption value="on_date">
@@ -455,7 +496,7 @@ function BillTypeSection({ form }: { form: BillForm }) {
                   <NativeSelectOption value="after_occurrences">
                     After occurrences
                   </NativeSelectOption>
-                </SelectInput>
+                </ControlledSelectInput>
                 <RecurrenceEndFields form={form} />
               </FieldGroup>
             </CardContent>
@@ -491,11 +532,12 @@ function RecurrenceFrequencyFields({ form }: { form: BillForm }) {
         name="recurrence.frequency"
         render={(frequency) => frequency === 'monthly'}
       >
-        <TextInput
+        <ControlledTextInput
           error={getRecurrenceError(form, 'monthlyAnchorDate')}
+          form={form}
           label="Monthly anchor date"
+          name="recurrence.monthlyAnchorDate"
           type="date"
-          {...form.register('recurrence.monthlyAnchorDate')}
         />
         <FieldDescription>
           If a month does not have that day, the bill runs on the last valid day
@@ -507,11 +549,12 @@ function RecurrenceFrequencyFields({ form }: { form: BillForm }) {
         name="recurrence.frequency"
         render={(frequency) => frequency === 'yearly'}
       >
-        <TextInput
+        <ControlledTextInput
           error={getRecurrenceError(form, 'yearlyAnchorDate')}
+          form={form}
           label="Yearly anchor date"
+          name="recurrence.yearlyAnchorDate"
           type="date"
-          {...form.register('recurrence.yearlyAnchorDate')}
         />
         <FieldDescription>
           If a future year does not have that date, the bill runs on the last
@@ -529,11 +572,12 @@ function RecurrenceEndFields({ form }: { form: BillForm }) {
         name="recurrence.endStrategy"
         render={(endStrategy) => endStrategy === 'on_date'}
       >
-        <TextInput
+        <ControlledTextInput
           error={form.formState.errors.recurrence?.endsOn?.message}
+          form={form}
           label="End date"
+          name="recurrence.endsOn"
           type="date"
-          {...form.register('recurrence.endsOn')}
         />
       </FormConditional>
       <FormConditional
@@ -541,14 +585,14 @@ function RecurrenceEndFields({ form }: { form: BillForm }) {
         name="recurrence.endStrategy"
         render={(endStrategy) => endStrategy === 'after_occurrences'}
       >
-        <TextInput
+        <ControlledTextInput
           error={form.formState.errors.recurrence?.occurrenceCount?.message}
+          form={form}
           label="Occurrences"
           min={2}
+          name="recurrence.occurrenceCount"
           type="number"
-          {...form.register('recurrence.occurrenceCount', {
-            setValueAs: (value) => (value === '' ? undefined : Number(value)),
-          })}
+          setValueAs={(value) => (value === '' ? undefined : Number(value))}
         />
       </FormConditional>
     </>
@@ -571,36 +615,37 @@ function LineItemsSection({ form }: { form: BillForm }) {
           {fields.map((field, index) => (
             <Card key={field.id}>
               <CardContent className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]">
-                <TextInput
+                <ControlledTextInput
                   error={
                     form.formState.errors.lineItems?.[index]?.description
                       ?.message
                   }
+                  form={form}
                   label="Description"
-                  {...form.register(`lineItems.${index}.description`)}
+                  name={`lineItems.${index}.description`}
                 />
-                <TextInput
+                <ControlledTextInput
                   error={
                     form.formState.errors.lineItems?.[index]?.quantity?.message
                   }
+                  form={form}
                   label="Qty"
                   min={1}
+                  name={`lineItems.${index}.quantity`}
                   type="number"
-                  {...form.register(`lineItems.${index}.quantity`, {
-                    valueAsNumber: true,
-                  })}
+                  valueAsNumber
                 />
-                <TextInput
+                <ControlledTextInput
                   error={
                     form.formState.errors.lineItems?.[index]?.unitPrice?.message
                   }
+                  form={form}
                   label="Unit price"
                   min={0}
+                  name={`lineItems.${index}.unitPrice`}
                   step="0.01"
                   type="number"
-                  {...form.register(`lineItems.${index}.unitPrice`, {
-                    valueAsNumber: true,
-                  })}
+                  valueAsNumber
                 />
                 <div className="flex items-end gap-3">
                   <Controller
@@ -649,13 +694,15 @@ function PaymentNotesSection({ form }: { form: BillForm }) {
       </CardHeader>
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
-          <TextInput
+          <ControlledTextInput
             error={form.formState.errors.taxRate?.message}
+            form={form}
             label="Tax rate (%)"
             min={0}
+            name="taxRate"
             step="0.01"
             type="number"
-            {...form.register('taxRate', { valueAsNumber: true })}
+            valueAsNumber
           />
           <Controller
             control={form.control}
@@ -669,12 +716,13 @@ function PaymentNotesSection({ form }: { form: BillForm }) {
             )}
           />
         </FieldGroup>
-        <TextareaInput
+        <ControlledTextareaInput
           className="mt-4"
           error={form.formState.errors.memo?.message}
+          form={form}
           label="Memo"
+          name="memo"
           rows={4}
-          {...form.register('memo')}
         />
       </CardContent>
     </Card>
@@ -698,14 +746,18 @@ function SubmissionSection({ form }: { form: BillForm }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <SelectInput label="Submit as" {...form.register('submitIntent')}>
+          <ControlledSelectInput
+            form={form}
+            label="Submit as"
+            name="submitIntent"
+          >
             <NativeSelectOption value="create">
               Create Endpoint
             </NativeSelectOption>
             <NativeSelectOption value="update">
               Update Endpoint
             </NativeSelectOption>
-          </SelectInput>
+          </ControlledSelectInput>
           <Button className="self-end" size="lg" type="submit">
             Transform & Submit
           </Button>
@@ -784,6 +836,87 @@ function getRecurrenceError(form: BillForm, name: string) {
     | undefined
 
   return recurrenceErrors?.[name]?.message
+}
+
+function ControlledTextInput({
+  form,
+  name,
+  setValueAs,
+  valueAsNumber = false,
+  ...props
+}: ControlledInputProps) {
+  return (
+    <Controller
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <TextInput
+          {...props}
+          name={field.name}
+          value={field.value == null ? '' : String(field.value)}
+          onBlur={field.onBlur}
+          onChange={(event) => {
+            const nextValue = event.currentTarget.value
+
+            field.onChange(
+              setValueAs
+                ? setValueAs(nextValue)
+                : valueAsNumber
+                  ? Number(nextValue)
+                  : nextValue,
+            )
+          }}
+        />
+      )}
+    />
+  )
+}
+
+function ControlledSelectInput({
+  children,
+  form,
+  name,
+  ...props
+}: ControlledSelectProps) {
+  return (
+    <Controller
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <SelectInput
+          {...props}
+          name={field.name}
+          value={field.value == null ? '' : String(field.value)}
+          onBlur={field.onBlur}
+          onChange={(event) => field.onChange(event.currentTarget.value)}
+        >
+          {children}
+        </SelectInput>
+      )}
+    />
+  )
+}
+
+function ControlledTextareaInput({
+  form,
+  name,
+  ...props
+}: ControlledTextareaProps) {
+  return (
+    <Controller
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <TextareaInput
+          {...props}
+          name={field.name}
+          value={field.value == null ? '' : String(field.value)}
+          onBlur={field.onBlur}
+          onChange={(event) => field.onChange(event.currentTarget.value)}
+        />
+      )}
+    />
+  )
 }
 
 function TextInput({
