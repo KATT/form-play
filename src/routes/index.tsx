@@ -1002,7 +1002,7 @@ function SubmissionSection({
           </ControlledSelectInput>
           <SubmitButton
             className="self-end"
-            icon={<SendIcon aria-hidden="true" />}
+            icon={SendIcon}
             size="lg"
           >
             Transform & Submit

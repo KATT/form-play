@@ -1,6 +1,6 @@
-import { type ComponentProps, type ReactNode, useId } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
-import { CheckIcon } from 'lucide-react'
+import { type ComponentProps, useId } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { CheckIcon, type LucideIcon } from 'lucide-react'
 import {
   type DefaultValues,
   type FieldValues,
@@ -16,7 +16,6 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { cn } from '@/lib/utils'
 
 type SubmitButtonState = 'error' | 'idle' | 'submitting' | 'success'
 
@@ -103,7 +102,7 @@ function ResolverForm<TInput extends FieldValues, TOutput>(
 }
 
 function SubmitButton(
-  props: Omit<ComponentProps<typeof Button>, 'form' | 'type'> & {
+  props: Omit<ComponentProps<typeof Button>, 'form' | 'render' | 'type'> & {
     /**
      * Optionally specify a form to submit instead of the closest form context.
      */
@@ -111,7 +110,7 @@ function SubmitButton(
     /**
      * The default icon shown before the label when the button is idle.
      */
-    icon: ReactNode
+    icon: LucideIcon
   },
 ) {
   const {
@@ -122,6 +121,7 @@ function SubmitButton(
     icon,
     ...passThrough
   } = props
+  const Icon = icon
   const context = useFormContext()
 
   const form = explicitForm ?? context
@@ -130,15 +130,21 @@ function SubmitButton(
   const submitCount = formState?.submitCount ?? 0
   const isSubmitSuccessful = formState?.isSubmitSuccessful ?? false
   const errorCount = formState ? Object.keys(formState.errors).length : 0
-  const submitButtonState = (
-    isSubmitting
-      ? 'submitting'
-      : submitCount > 0 && errorCount > 0
-        ? 'error'
-        : submitCount > 0 && isSubmitSuccessful
-          ? 'success'
-          : 'idle'
-  ) satisfies SubmitButtonState
+  const submitButtonState = ((): SubmitButtonState => {
+    if (isSubmitting) {
+      return 'submitting'
+    }
+
+    if (submitCount > 0 && errorCount > 0) {
+      return 'error'
+    }
+
+    if (submitCount > 0 && isSubmitSuccessful) {
+      return 'success'
+    }
+
+    return 'idle'
+  })()
 
   if (!form) {
     throw new Error(
@@ -147,70 +153,75 @@ function SubmitButton(
   }
 
   return (
-    <motion.span
+    <Button
+      {...passThrough}
+      aria-busy={isSubmitting}
+      className={className}
+      form={explicitForm?.id}
       key={`submit-${submitButtonState}-${submitCount}`}
-      animate={
-        submitButtonState === 'error'
-          ? { x: [0, -6, 6, -4, 4, 0] }
-          : { x: 0 }
+      render={
+        <motion.button
+          animate={
+            submitButtonState === 'error'
+              ? {
+                  rotate: [0, -1, 1, -1, 1, 0],
+                  x: [0, -6, 6, -4, 4, 0],
+                }
+              : { rotate: 0, x: 0 }
+          }
+          transition={{ duration: 0.35 }}
+          whileHover={isSubmitting ? undefined : { y: -1 }}
+          whileTap={isSubmitting ? undefined : { scale: 0.98 }}
+        />
       }
-      className={cn('inline-flex', className)}
-      transition={{ duration: 0.35 }}
+      type="submit"
+      disabled={disabled || isSubmitting}
     >
-      <Button
-        {...passThrough}
-        aria-busy={isSubmitting}
-        className={className}
-        form={explicitForm?.id}
-        type="submit"
-        disabled={disabled || isSubmitting}
+      <span
+        aria-hidden="true"
+        data-icon="inline-start"
+        className="inline-grid size-4 shrink-0 place-items-center"
       >
-        <span
-          aria-hidden="true"
-          data-icon="inline-start"
-          className="inline-grid size-4 shrink-0 place-items-center"
-        >
-          <AnimatePresence initial={false} mode="wait">
-            {submitButtonState === 'submitting' ? (
-              <motion.span
-                key="loading"
-                initial={{ opacity: 0, scale: 0.8, y: -2 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: 2 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Spinner aria-hidden="true" role="presentation" />
-              </motion.span>
-            ) : submitButtonState === 'success' ? (
-              <motion.span
-                key="success"
-                initial={{ opacity: 0, scale: 0.6, rotate: -20 }}
-                animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                exit={{ opacity: 0, scale: 0.6, rotate: 20 }}
-                transition={{
-                  type: 'spring',
-                  duration: 0.35,
-                  bounce: 0.35,
-                }}
-              >
-                <CheckIcon aria-hidden="true" className="text-emerald-500" />
-              </motion.span>
-            ) : (
-              <motion.span
-                key="idle"
-                initial={{ opacity: 0, scale: 0.8, y: -2 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: 2 }}
-                transition={{ duration: 0.15 }}
-              >
-                {icon}
-              </motion.span>
-            )}
-          </AnimatePresence>
-        </span>
-        {children}
-      </Button>
-    </motion.span>
+        <AnimatePresence initial={false} mode="wait">
+          {submitButtonState === 'submitting' ? (
+            <motion.span
+              key="loading"
+              initial={{ opacity: 0, scale: 0.7, y: -6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.7, y: 6 }}
+              transition={{ type: 'spring', duration: 0.28, bounce: 0.25 }}
+            >
+              <Spinner aria-hidden="true" role="presentation" />
+            </motion.span>
+          ) : submitButtonState === 'success' ? (
+            <motion.span
+              key="success"
+              initial={{ opacity: 0, scale: 0.4, rotate: -45 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              exit={{ opacity: 0, scale: 0.4, rotate: 45 }}
+              transition={{
+                type: 'spring',
+                duration: 0.45,
+                bounce: 0.5,
+              }}
+            >
+              <CheckIcon aria-hidden="true" className="text-emerald-500" />
+            </motion.span>
+          ) : (
+            <motion.span
+              key="idle"
+              initial={{ opacity: 0, scale: 0.7, y: -6 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.7, y: 6 }}
+              transition={{ type: 'spring', duration: 0.28, bounce: 0.25 }}
+            >
+              <Icon aria-hidden="true" />
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </span>
+      {children}
+    </Button>
   )
 }
 
