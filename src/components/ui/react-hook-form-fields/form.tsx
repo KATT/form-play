@@ -14,7 +14,6 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
-import { cn } from '@/lib/utils'
 
 type UseResolverForm<
   TInput extends FieldValues,
@@ -129,17 +128,9 @@ function SubmitButton(
       type="submit"
       disabled={disabled || formState.isSubmitting}
     >
-      <Spinner
-        aria-hidden="true"
-        data-icon="inline-start"
-        role="presentation"
-        className={cn(
-          'transition-[opacity,transform] duration-150',
-          formState.isSubmitting
-            ? 'translate-x-0 opacity-100'
-            : '-translate-x-1 opacity-0',
-        )}
-      />
+      {formState.isSubmitting ? (
+        <Spinner aria-hidden="true" data-icon="inline-start" />
+      ) : null}
       {children}
     </Button>
   )
