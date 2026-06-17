@@ -5,7 +5,7 @@ import jsonLanguage from '@shikijs/langs/json'
 import githubDarkTheme from '@shikijs/themes/github-dark'
 import githubLightTheme from '@shikijs/themes/github-light'
 import { createFileRoute } from '@tanstack/react-router'
-import { Suspense, use, useDeferredValue } from 'react'
+import { Suspense, use, useDeferredValue, useMemo } from 'react'
 import {
   type UseFormReturn,
   Controller,
@@ -37,7 +37,6 @@ import { ControlledCheckboxField } from '@/components/ui/react-hook-form-fields/
 import {
   ControlledMoneyInput,
   createCurrencyAmountSchema,
-  parseCurrencyAmountInput,
 } from '@/components/ui/react-hook-form-fields/money-input'
 import { ControlledRadioCardGroup } from '@/components/ui/react-hook-form-fields/radio-card-group'
 import { ControlledSelectInput } from '@/components/ui/react-hook-form-fields/select-input'
@@ -134,6 +133,12 @@ const lineItemSchema = z.object({
   unitAmountCents: currencyAmountSchema,
   taxable: z.boolean(),
 })
+const lineItemsSchema = z
+  .array(lineItemSchema)
+  .min(1, 'Add at least one line item')
+const taxRateSchema = requiredNumberInput('Tax rate is required').pipe(
+  z.number().min(0).max(100, 'Tax rate cannot exceed 100%'),
+)
 
 const recurrenceBaseSchema = z.object({
   interval: requiredNumberInput('Repeat interval is required').pipe(
@@ -200,10 +205,8 @@ const baseBillSchema = z.object({
   status: z.enum(billStatuses),
   issueDate: z.string().min(1, 'Choose an issue date'),
   currency: z.enum(currencies),
-  lineItems: z.array(lineItemSchema).min(1, 'Add at least one line item'),
-  taxRate: requiredNumberInput('Tax rate is required').pipe(
-    z.number().min(0).max(100, 'Tax rate cannot exceed 100%'),
-  ),
+  lineItems: lineItemsSchema,
+  taxRate: taxRateSchema,
   collectPaymentAutomatically: z.boolean(),
   memo: z.string().max(500, 'Keep the memo under 500 characters').optional(),
 })
@@ -678,7 +681,33 @@ function SubmissionSection({ form }: { form: BillForm }) {
   const lineItems = useWatch({ control: form.control, name: 'lineItems' })
   const taxRate = useWatch({ control: form.control, name: 'taxRate' })
   const currency = useWatch({ control: form.control, name: 'currency' })
-  const totals = calculateTotals(lineItems ?? [], Number(taxRate) || 0)
+  const totals = useMemo(() => {
+    const parsedLineItems = lineItemsSchema.safeParse(lineItems ?? [])
+    const parsedTaxRate = taxRateSchema.safeParse(taxRate ?? '')
+
+    if (!parsedLineItems.success || !parsedTaxRate.success) {
+      return null
+    }
+
+    const subtotal = parsedLineItems.data.reduce(
+      (total, item) => total + (item.quantity * item.unitAmountCents) / 100,
+      0,
+    )
+    const taxableSubtotal = parsedLineItems.data.reduce(
+      (total, item) =>
+        item.taxable
+          ? total + (item.quantity * item.unitAmountCents) / 100
+          : total,
+      0,
+    )
+    const tax = taxableSubtotal * (parsedTaxRate.data / 100)
+
+    return {
+      subtotal,
+      tax,
+      total: subtotal + tax,
+    }
+  }, [lineItems, taxRate])
   const money = getMoneyFormatter(currency)
 
   return (
@@ -686,11 +715,19 @@ function SubmissionSection({ form }: { form: BillForm }) {
       <CardContent className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm text-muted-foreground">Bill total</p>
-          <p className="text-3xl font-bold">{money.format(totals.total)}</p>
-          <p className="text-sm text-muted-foreground">
-            {money.format(totals.subtotal)} subtotal +{' '}
-            {money.format(totals.tax)} tax
-          </p>
+          {totals ? (
+            <>
+              <p className="text-3xl font-bold">{money.format(totals.total)}</p>
+              <p className="text-sm text-muted-foreground">
+                {money.format(totals.subtotal)} subtotal +{' '}
+                {money.format(totals.tax)} tax
+              </p>
+            </>
+          ) : (
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Complete the line items and tax rate to preview the bill total.
+            </p>
+          )}
         </div>
         <div className="flex flex-wrap gap-3">
           <ControlledSelectInput
@@ -1098,44 +1135,6 @@ function getApiSchedule(recurrence: NonNullable<BillFormValues['recurrence']>) {
         day_overflow: 'last_day' as const,
       }
     }
-  }
-}
-
-function calculateTotals(
-  lineItems: Array<{
-    quantity: unknown
-    unitAmountCents: unknown
-    taxable: boolean
-  }>,
-  taxRate: unknown,
-) {
-  const subtotal = lineItems.reduce(
-    (total, item) =>
-      total +
-      ((Number(item.quantity) || 0) *
-        parseCurrencyAmountInput(currencyAmountSchema, item.unitAmountCents)) /
-        100,
-    0,
-  )
-  const taxableSubtotal = lineItems.reduce(
-    (total, item) =>
-      item.taxable
-        ? total +
-          ((Number(item.quantity) || 0) *
-            parseCurrencyAmountInput(
-              currencyAmountSchema,
-              item.unitAmountCents,
-            )) /
-            100
-        : total,
-    0,
-  )
-  const tax = taxableSubtotal * ((Number(taxRate) || 0) / 100)
-
-  return {
-    subtotal,
-    tax,
-    total: subtotal + tax,
   }
 }
 
