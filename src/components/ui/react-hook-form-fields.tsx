@@ -27,17 +27,23 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
-type FormWithControl<TFieldValues extends FieldValues> = {
-  control: Control<TFieldValues>
+type FormWithControl = {
+  control: unknown
 }
 
 type ControlledFieldBase<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 > = {
-  form: FormWithControl<TFieldValues>
+  form: FormWithControl
   label: string
   name: TName
+}
+
+function getFormControl<TFieldValues extends FieldValues>(
+  form: FormWithControl,
+) {
+  return form.control as Control<TFieldValues>
 }
 
 type ControlledTextInputProps<
@@ -111,7 +117,7 @@ function ControlledTextInput<
 >({ form, name, ...props }: ControlledTextInputProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={form.control}
+      control={getFormControl<TFieldValues>(form)}
       name={name}
       render={({ field, fieldState }) => (
         <TextInput
@@ -141,7 +147,7 @@ function ControlledMoneyInput<
 
   return (
     <Controller
-      control={form.control}
+      control={getFormControl<TFieldValues>(form)}
       name={name}
       render={({ field, fieldState }) => (
         <MoneyInput
@@ -151,14 +157,11 @@ function ControlledMoneyInput<
           error={fieldState.error?.message}
           name={field.name}
           placeholder={placeholder ?? `0.00 ${currency}`}
-          value={formatCentsAsMajorUnit(field.value)}
-          onBlur={(event) => {
+          value={field.value == null ? '' : String(field.value)}
+          onBlur={() => {
             field.onBlur()
-            field.onChange(parseMajorUnitToCents(event.currentTarget.value))
           }}
-          onChange={(event) => {
-            field.onChange(parseMajorUnitToCents(event.currentTarget.value))
-          }}
+          onChange={(event) => field.onChange(event.currentTarget.value)}
         />
       )}
     />
@@ -176,7 +179,7 @@ function ControlledSelectInput<
 }: ControlledSelectInputProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={form.control}
+      control={getFormControl<TFieldValues>(form)}
       name={name}
       render={({ field, fieldState }) => (
         <SelectInput
@@ -200,7 +203,7 @@ function ControlledTextareaInput<
 >({ form, name, ...props }: ControlledTextareaInputProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={form.control}
+      control={getFormControl<TFieldValues>(form)}
       name={name}
       render={({ field, fieldState }) => (
         <TextareaInput
@@ -227,7 +230,7 @@ function ControlledCheckboxField<
 }: ControlledCheckboxFieldProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={form.control}
+      control={getFormControl<TFieldValues>(form)}
       name={name}
       render={({ field, fieldState }) => (
         <CheckboxField
@@ -256,7 +259,7 @@ function ControlledRadioCardGroup<
     <Field>
       <FieldLabel>{label}</FieldLabel>
       <Controller
-        control={form.control}
+        control={getFormControl<TFieldValues>(form)}
         name={name}
         render={({ field, fieldState }) => {
           const error = fieldState.error?.message
@@ -446,30 +449,6 @@ function CheckboxField({
       <FieldError>{error}</FieldError>
     </Field>
   )
-}
-
-function formatCentsAsMajorUnit(value: unknown) {
-  if (value == null || value === '') {
-    return ''
-  }
-
-  const cents = Number(value)
-
-  if (!Number.isFinite(cents)) {
-    return ''
-  }
-
-  return (cents / 100).toFixed(2)
-}
-
-function parseMajorUnitToCents(value: unknown) {
-  const [major = '0', minor = ''] = String(value ?? '')
-    .replace(/[^\d.]/g, '')
-    .split('.')
-  const normalizedMajor = major === '' ? '0' : major
-  const normalizedMinor = minor.padEnd(2, '0').slice(0, 2)
-
-  return Number(normalizedMajor) * 100 + Number(normalizedMinor)
 }
 
 function getCurrencySymbol(currency: string) {

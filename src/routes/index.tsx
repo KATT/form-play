@@ -10,7 +10,6 @@ import {
   type Control,
   type FieldPath,
   type FieldPathValue,
-  type FieldValues,
   type UseFormReturn,
   Controller,
   useFieldArray,
@@ -112,23 +111,49 @@ const shikiHighlighter = createHighlighterCore({
 })
 const highlightedJsonCache = new Map<string, Promise<string>>()
 
-const lineItemSchema = z.object({
-  id: z.string().optional(),
-  description: z.string().min(1, 'Add a description'),
-  quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
-  unitAmountCents: z.coerce
-    .number()
-    .int('Unit price must resolve to whole cents')
-    .min(0, 'Unit price cannot be negative'),
-  taxable: z.boolean(),
-})
+const requiredNumberInput = (message: string) =>
+  z
+    .string()
+    .min(1, message)
+    .transform((value) => Number(value))
+
+const lineItemSchema = z
+  .object({
+    id: z.string().optional(),
+    description: z.string().min(1, 'Add a description'),
+    quantity: requiredNumberInput('Quantity is required').pipe(
+      z.number().min(1, 'Quantity must be at least 1'),
+    ),
+    unitPrice: z
+      .string()
+      .min(1, 'Unit price is required')
+      .regex(/^\d+(\.\d{1,2})?$/, 'Use a valid money amount')
+      .transform(parseMoneyInputToCents)
+      .pipe(
+        z
+          .number()
+          .int('Unit price must resolve to whole cents')
+          .min(0, 'Unit price cannot be negative'),
+      ),
+    taxable: z.boolean(),
+  })
+  .transform(({ unitPrice, ...lineItem }) => ({
+    ...lineItem,
+    unitAmountCents: unitPrice,
+  }))
 
 const recurrenceBaseSchema = z.object({
-  interval: z.coerce.number().min(1, 'Repeat interval must be at least 1'),
+  interval: requiredNumberInput('Repeat interval is required').pipe(
+    z.number().min(1, 'Repeat interval must be at least 1'),
+  ),
   startsOn: z.string().min(1, 'Choose a start date'),
   endStrategy: z.enum(recurrenceEndStrategies),
   endsOn: z.string().optional(),
-  occurrenceCount: z.coerce.number().optional(),
+  occurrenceCount: z
+    .string()
+    .optional()
+    .transform((value) => (value ? Number(value) : undefined))
+    .pipe(z.number().min(2, 'Use at least 2 occurrences').optional()),
 })
 
 const weekdayRecurrenceSchema = recurrenceBaseSchema.extend({
@@ -183,7 +208,9 @@ const baseBillSchema = z.object({
   issueDate: z.string().min(1, 'Choose an issue date'),
   currency: z.enum(currencies),
   lineItems: z.array(lineItemSchema).min(1, 'Add at least one line item'),
-  taxRate: z.coerce.number().min(0).max(100, 'Tax rate cannot exceed 100%'),
+  taxRate: requiredNumberInput('Tax rate is required').pipe(
+    z.number().min(0).max(100, 'Tax rate cannot exceed 100%'),
+  ),
   collectPaymentAutomatically: z.boolean(),
   memo: z.string().max(500, 'Keep the memo under 500 characters').optional(),
 })
@@ -576,7 +603,7 @@ function LineItemsSection({ form }: { form: BillForm }) {
                   form={form}
                   label="Unit price"
                   min={0}
-                  name={`lineItems.${index}.unitAmountCents`}
+                  name={`lineItems.${index}.unitPrice`}
                   step="0.01"
                 />
                 <div className="flex items-end gap-3">
@@ -701,24 +728,21 @@ function SubmissionPreviewCard({ form }: { form: BillForm }) {
   )
 }
 
-function FormConditional<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({
+function FormConditional<TName extends FieldPath<BillFormInputValues>>({
   children,
   control,
   name,
   render,
 }: {
   children: React.ReactNode
-  control: Control<TFieldValues>
+  control: BillForm['control']
   name: TName
-  render: (value: FieldPathValue<TFieldValues, TName>) => boolean
+  render: (value: FieldPathValue<BillFormInputValues, TName>) => boolean
 }) {
-  const value = useWatch({ control, name }) as FieldPathValue<
-    TFieldValues,
-    TName
-  >
+  const value = useWatch({
+    control: control as unknown as Control<BillFormInputValues>,
+    name,
+  }) as FieldPathValue<BillFormInputValues, TName>
 
   return render(value) ? <>{children}</> : null
 }
@@ -848,7 +872,7 @@ function HighlightedJson({ code }: { code: string }) {
   )
 }
 
-function getNewBillDefaults(): BillFormValues {
+function getNewBillDefaults(): BillFormInputValues {
   return {
     billId: undefined,
     editorMode: 'new',
@@ -861,14 +885,14 @@ function getNewBillDefaults(): BillFormValues {
     dueDate: '2026-06-30',
     currency: 'USD',
     lineItems: [getDefaultLineItem()],
-    taxRate: 0,
+    taxRate: '0',
     collectPaymentAutomatically: false,
     memo: '',
     recurrence: getDefaultRecurrence(),
   }
 }
 
-function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
+function getBillDefaultsFromApi(apiBill: ApiBill): BillFormInputValues {
   const baseDefaults = {
     billId: apiBill.id,
     editorMode: 'api' as const,
@@ -881,11 +905,11 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
     lineItems: apiBill.line_items.map((item) => ({
       id: item.id,
       description: item.description,
-      quantity: item.quantity,
-      unitAmountCents: item.unit_amount_cents,
+      quantity: String(item.quantity),
+      unitPrice: formatCentsAsMoneyInput(item.unit_amount_cents),
       taxable: item.taxable,
     })),
-    taxRate: apiBill.tax_rate_bps / 100,
+    taxRate: String(apiBill.tax_rate_bps / 100),
     collectPaymentAutomatically: apiBill.auto_collect,
     memo: apiBill.memo ?? '',
   }
@@ -899,13 +923,16 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
         : 'never'
     const baseRecurrence = {
       frequency: apiBill.schedule.frequency,
-      interval: apiBill.schedule.interval,
+      interval: String(apiBill.schedule.interval),
       startsOn: apiBill.schedule.starts_on,
       monthlyAnchorDate: '',
       yearlyAnchorDate: '',
       endStrategy,
       endsOn: apiBill.schedule.ends_on ?? '',
-      occurrenceCount: apiBill.schedule.max_occurrences ?? undefined,
+      occurrenceCount:
+        apiBill.schedule.max_occurrences == null
+          ? undefined
+          : String(apiBill.schedule.max_occurrences),
     }
 
     return {
@@ -945,19 +972,21 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
 const createBillDefaultValues = getNewBillDefaults()
 const editBillDefaultValues = getBillDefaultsFromApi(sampleApiBill)
 
-function getDefaultLineItem(): BillFormValues['lineItems'][number] {
+function getDefaultLineItem(): BillFormInputValues['lineItems'][number] {
   return {
     description: '',
-    quantity: 1,
-    unitAmountCents: 0,
+    quantity: '1',
+    unitPrice: '0.00',
     taxable: true,
   }
 }
 
-function getDefaultRecurrence(): NonNullable<BillFormValues['recurrence']> {
+function getDefaultRecurrence(): NonNullable<
+  BillFormInputValues['recurrence']
+> {
   return {
     frequency: 'monthly',
-    interval: 1,
+    interval: '1',
     startsOn: '2026-07-01',
     monthlyAnchorDate: '2026-07-31',
     endStrategy: 'never',
@@ -1091,7 +1120,7 @@ function getApiSchedule(recurrence: NonNullable<BillFormValues['recurrence']>) {
 function calculateTotals(
   lineItems: Array<{
     quantity: unknown
-    unitAmountCents: unknown
+    unitPrice: unknown
     taxable: boolean
   }>,
   taxRate: unknown,
@@ -1099,7 +1128,7 @@ function calculateTotals(
   const subtotal = lineItems.reduce(
     (total, item) =>
       total +
-      ((Number(item.quantity) || 0) * (Number(item.unitAmountCents) || 0)) /
+      ((Number(item.quantity) || 0) * parseMoneyInputToCents(item.unitPrice)) /
         100,
     0,
   )
@@ -1107,7 +1136,8 @@ function calculateTotals(
     (total, item) =>
       item.taxable
         ? total +
-          ((Number(item.quantity) || 0) * (Number(item.unitAmountCents) || 0)) /
+          ((Number(item.quantity) || 0) *
+            parseMoneyInputToCents(item.unitPrice)) /
             100
         : total,
     0,
@@ -1134,6 +1164,20 @@ function getMoneyFormatter(currency: string) {
     currency,
     style: 'currency',
   })
+}
+
+function parseMoneyInputToCents(value: unknown) {
+  const [major = '0', minor = ''] = String(value ?? '')
+    .replace(/[^\d.]/g, '')
+    .split('.')
+  const normalizedMajor = major === '' ? '0' : major
+  const normalizedMinor = minor.padEnd(2, '0').slice(0, 2)
+
+  return Number(normalizedMajor) * 100 + Number(normalizedMinor)
+}
+
+function formatCentsAsMoneyInput(value: number) {
+  return (value / 100).toFixed(2)
 }
 
 function titleCase(value: string) {
