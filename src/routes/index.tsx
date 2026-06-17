@@ -977,7 +977,9 @@ function getDefaultRecurrence(): NonNullable<
   }
 }
 
-const toApiPayload = billFormSchema.transform((values): ApiBillPayload => {
+export const toApiPayload = billFormSchema.transform(getApiPayload)
+
+function getApiPayload(values: BillFormValues): ApiBillPayload {
   const basePayload: ApiBillPayloadBase = {
     kind: values.billType,
     customer: {
@@ -1020,11 +1022,11 @@ const toApiPayload = billFormSchema.transform((values): ApiBillPayload => {
       taxable: item.taxable,
     })),
   }
-})
+}
 
 function toApiSubmission(values: BillFormValues): ApiSubmission {
   const billId = values.billId ?? ':billId'
-  const body = toApiPayload.parse(values)
+  const body = getApiPayload(values)
 
   if (values.submitIntent === 'create') {
     if ('id' in body) {
