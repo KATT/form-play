@@ -6,7 +6,7 @@ import {
 
 interface ConditionalTooltipProps {
   children: React.ReactElement
-  disabledReason?: React.ReactNode
+  disabledReason: React.ReactNode | undefined
 }
 
 function ConditionalTooltip({
