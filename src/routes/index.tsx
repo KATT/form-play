@@ -12,7 +12,7 @@ import {
   useDeferredValue,
   useMemo,
 } from 'react'
-import { SendIcon } from 'lucide-react'
+import { FileCheckIcon } from 'lucide-react'
 import { type UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -1002,7 +1002,7 @@ function SubmissionSection({
           </ControlledSelectInput>
           <SubmitButton
             className="self-end"
-            icon={SendIcon}
+            icon={FileCheckIcon}
             iconPosition="end"
             size="lg"
           >
