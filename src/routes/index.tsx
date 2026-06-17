@@ -38,16 +38,21 @@ import {
   ControlledMoneyInput,
   createCurrencyAmountSchema,
 } from '@/components/ui/react-hook-form-fields/money-input'
-import { ControlledRadioCardGroup } from '@/components/ui/react-hook-form-fields/radio-card-group'
+import {
+  ControlledRadioCardGroup,
+  ControlledRadioCardGroupItem,
+} from '@/components/ui/react-hook-form-fields/radio-card-group'
 import { ControlledSelectInput } from '@/components/ui/react-hook-form-fields/select-input'
 import { ControlledTextInput } from '@/components/ui/react-hook-form-fields/text-input'
 import { ControlledTextareaInput } from '@/components/ui/react-hook-form-fields/textarea-input'
 import {
   Field,
+  FieldContent,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldTitle,
 } from '@/components/ui/field'
 import { NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -517,24 +522,33 @@ function BillTypeSection({ form }: { form: BillForm }) {
           control={form.control}
           label="Bill type"
           name="billType"
-          options={[
-            {
-              value: 'one_off',
-              title: 'One-off',
-              description: 'Collect this bill once with a fixed due date.',
-              disabled: !!billTypeDisabledReason,
-              disabledReason: billTypeDisabledReason,
-            },
-            {
-              value: 'repeating',
-              title: 'Repeating',
-              description:
-                'Generate future bills on a daily, weekly, monthly, or yearly cadence.',
-              disabled: !!billTypeDisabledReason,
-              disabledReason: billTypeDisabledReason,
-            },
-          ]}
-        />
+        >
+          <ControlledRadioCardGroupItem
+            disabled={!!billTypeDisabledReason}
+            disabledReason={billTypeDisabledReason}
+            value="one_off"
+          >
+            <FieldContent>
+              <FieldTitle>One-off</FieldTitle>
+              <FieldDescription>
+                Collect this bill once with a fixed due date.
+              </FieldDescription>
+            </FieldContent>
+          </ControlledRadioCardGroupItem>
+          <ControlledRadioCardGroupItem
+            disabled={!!billTypeDisabledReason}
+            disabledReason={billTypeDisabledReason}
+            value="repeating"
+          >
+            <FieldContent>
+              <FieldTitle>Repeating</FieldTitle>
+              <FieldDescription>
+                Generate future bills on a daily, weekly, monthly, or yearly
+                cadence.
+              </FieldDescription>
+            </FieldContent>
+          </ControlledRadioCardGroupItem>
+        </ControlledRadioCardGroup>
 
         <FieldGroup className="mt-5 grid gap-4 md:grid-cols-2">
           <ControlledTextInput

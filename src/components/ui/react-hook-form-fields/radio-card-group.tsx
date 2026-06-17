@@ -1,34 +1,34 @@
-import { useId } from 'react'
+import { createContext, useContext, useId } from 'react'
 import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
 
 import {
   Field,
-  FieldContent,
-  FieldDescription,
   FieldError,
   FieldLabel,
-  FieldTitle,
 } from '@/components/ui/field'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
 import { ConditionalTooltip } from '@/components/ui/conditional-tooltip'
 import { cn } from '@/lib/utils'
 
-interface RadioCardOption {
-  description?: React.ReactNode
-  disabled?: boolean
-  disabledReason?: React.ReactNode
-  title: React.ReactNode
-  value: string
+interface RadioCardGroupContextValue {
+  error: boolean
+  fieldRef: (instance: HTMLElement | null) => void
+  groupId: string
+  selectedValue: string
 }
+
+const RadioCardGroupContext = createContext<
+  RadioCardGroupContextValue | undefined
+>(undefined)
 
 interface ControlledRadioCardGroupProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
   TTransformedValues extends FieldValues | undefined = FieldValues,
 > extends ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
+  children: React.ReactNode
   className?: string
-  options: readonly RadioCardOption[]
 }
 
 function ControlledRadioCardGroup<
@@ -36,11 +36,11 @@ function ControlledRadioCardGroup<
   TName extends FieldPath<TFieldValues>,
   TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
+  children,
   className,
   control,
   label,
   name,
-  options,
 }: ControlledRadioCardGroupProps<TFieldValues, TName, TTransformedValues>) {
   const radioGroupId = useId()
 
@@ -53,68 +53,26 @@ function ControlledRadioCardGroup<
         render={({ field, fieldState }) => {
           const error = fieldState.error?.message
           const selectedValue = field.value == null ? '' : String(field.value)
-          const focusValue =
-            selectedValue ||
-            options.find((option) => !option.disabled)?.value ||
-            options[0]?.value
 
           return (
             <>
-              <RadioGroup
-                aria-invalid={!!error}
-                className={cn('grid gap-4 md:grid-cols-2', className)}
-                value={selectedValue}
-                onValueChange={(value) => field.onChange(value)}
+              <RadioCardGroupContext
+                value={{
+                  error: !!error,
+                  fieldRef: field.ref,
+                  groupId: radioGroupId,
+                  selectedValue,
+                }}
               >
-                {options.map((option) => {
-                  const optionId = `${radioGroupId}-${option.value}`
-
-                  return (
-                    <ConditionalTooltip
-                      disabledReason={option.disabledReason}
-                      key={option.value}
-                    >
-                      <FieldLabel
-                        htmlFor={optionId}
-                        aria-disabled={option.disabled || undefined}
-                        className={cn(
-                          'cursor-pointer',
-                          option.disabled && 'cursor-not-allowed opacity-60',
-                        )}
-                      >
-                        <Field
-                          data-disabled={option.disabled || undefined}
-                          orientation="horizontal"
-                          className={cn(
-                            'min-h-32 rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
-                            option.disabled && 'hover:bg-transparent',
-                          )}
-                        >
-                          <FieldContent>
-                            <FieldTitle>{option.title}</FieldTitle>
-                            {option.description ? (
-                              <FieldDescription>
-                                {option.description}
-                              </FieldDescription>
-                            ) : null}
-                          </FieldContent>
-                          <RadioGroupItem
-                            aria-invalid={!!error}
-                            disabled={option.disabled}
-                            id={optionId}
-                            ref={
-                              option.value === focusValue
-                                ? field.ref
-                                : undefined
-                            }
-                            value={option.value}
-                          />
-                        </Field>
-                      </FieldLabel>
-                    </ConditionalTooltip>
-                  )
-                })}
-              </RadioGroup>
+                <RadioGroup
+                  aria-invalid={!!error}
+                  className={cn('grid gap-4 md:grid-cols-2', className)}
+                  value={selectedValue}
+                  onValueChange={(value) => field.onChange(value)}
+                >
+                  {children}
+                </RadioGroup>
+              </RadioCardGroupContext>
               <FieldError>{error}</FieldError>
             </>
           )
@@ -124,4 +82,72 @@ function ControlledRadioCardGroup<
   )
 }
 
-export { ControlledRadioCardGroup }
+interface ControlledRadioCardGroupItemProps {
+  children: React.ReactNode
+  className?: string
+  disabled?: boolean
+  disabledReason: React.ReactNode | undefined
+  value: string
+}
+
+function ControlledRadioCardGroupItem({
+  children,
+  className,
+  disabled,
+  disabledReason,
+  value,
+}: ControlledRadioCardGroupItemProps) {
+  const { error, fieldRef, groupId, selectedValue } =
+    useRadioCardGroupContext()
+  const optionId = `${groupId}-${value}`
+
+  return (
+    <ConditionalTooltip disabledReason={disabledReason}>
+      <FieldLabel
+        htmlFor={optionId}
+        aria-disabled={disabled || undefined}
+        className={cn(
+          'cursor-pointer',
+          disabled && 'cursor-not-allowed opacity-60',
+        )}
+      >
+        <Field
+          data-disabled={disabled || undefined}
+          orientation="horizontal"
+          className={cn(
+            'min-h-32 rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
+            disabled && 'hover:bg-transparent',
+            className,
+          )}
+        >
+          {children}
+          <RadioGroupItem
+            aria-invalid={error}
+            disabled={disabled}
+            id={optionId}
+            ref={
+              selectedValue === value || (!selectedValue && !disabled)
+                ? fieldRef
+                : undefined
+            }
+            value={value}
+          />
+        </Field>
+      </FieldLabel>
+    </ConditionalTooltip>
+  )
+}
+
+function useRadioCardGroupContext() {
+  const context = useContext(RadioCardGroupContext)
+
+  if (!context) {
+    throw new Error(
+      'ControlledRadioCardGroupItem must be used inside ControlledRadioCardGroup.',
+    )
+  }
+
+  return context
+}
+
+export { ControlledRadioCardGroup, ControlledRadioCardGroupItem }
