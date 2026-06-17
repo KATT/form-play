@@ -494,24 +494,6 @@ function BillDetailsSection({ form }: { form: BillForm }) {
               </NativeSelectOption>
             ))}
           </ControlledSelectInput>
-          <ControlledTextInput
-            control={form.control}
-            label="Issue date"
-            name="issueDate"
-            type="date"
-          />
-          <FormConditional
-            control={form.control}
-            name="billType"
-            render={(billType) => billType === 'one_off'}
-          >
-            <ControlledTextInput
-              control={form.control}
-              label="Due date"
-              name="dueDate"
-              type="date"
-            />
-          </FormConditional>
         </FieldGroup>
       </CardContent>
     </Card>
@@ -528,7 +510,7 @@ function BillTypeSection({ form }: { form: BillForm }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bill Type</CardTitle>
+        <CardTitle>Bill Schedule</CardTitle>
       </CardHeader>
       <CardContent>
         <ControlledRadioCardGroup
@@ -553,6 +535,27 @@ function BillTypeSection({ form }: { form: BillForm }) {
             },
           ]}
         />
+
+        <FieldGroup className="mt-5 grid gap-4 md:grid-cols-2">
+          <ControlledTextInput
+            control={form.control}
+            label="Issue anchor date"
+            name="issueDate"
+            type="date"
+          />
+          <FormConditional
+            control={form.control}
+            name="billType"
+            render={(billType) => billType === 'one_off'}
+          >
+            <ControlledTextInput
+              control={form.control}
+              label="Due date"
+              name="dueDate"
+              type="date"
+            />
+          </FormConditional>
+        </FieldGroup>
 
         <FormConditional
           control={form.control}
