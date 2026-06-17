@@ -1,5 +1,5 @@
-import { type ComponentProps, useId } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { type ComponentProps, useEffect, useRef, useState, useId } from 'react'
+import { AnimatePresence, motion, useAnimationControls } from 'motion/react'
 import { CheckIcon, XIcon } from 'lucide-react'
 import {
   type DefaultValues,
@@ -19,6 +19,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 
 type SubmitButtonState = 'error' | 'idle' | 'submitting' | 'success'
+type SubmitButtonFeedbackState = Exclude<SubmitButtonState, 'submitting'>
 
 type UseResolverForm<
   TInput extends FieldValues,
@@ -120,7 +121,11 @@ function SubmitButton(
     form: explicitForm,
     ...passThrough
   } = props
+  const buttonAnimationControls = useAnimationControls()
   const context = useFormContext()
+  const lastSettledSubmitCount = useRef(0)
+  const [feedbackState, setFeedbackState] =
+    useState<SubmitButtonFeedbackState>('idle')
 
   const form = explicitForm ?? context
   const formState = form?.formState
@@ -133,16 +138,69 @@ function SubmitButton(
       return 'submitting'
     }
 
-    if (submitCount > 0 && errorCount > 0) {
-      return 'error'
-    }
-
-    if (submitCount > 0 && isSubmitSuccessful) {
-      return 'success'
-    }
-
-    return 'idle'
+    return feedbackState
   })()
+
+  useEffect(() => {
+    if (isSubmitting) {
+      setFeedbackState('idle')
+    }
+  }, [isSubmitting])
+
+  useEffect(() => {
+    if (
+      isSubmitting ||
+      submitCount === 0 ||
+      lastSettledSubmitCount.current === submitCount
+    ) {
+      return
+    }
+
+    if (errorCount === 0 && !isSubmitSuccessful) {
+      return
+    }
+
+    lastSettledSubmitCount.current = submitCount
+
+    if (errorCount > 0) {
+      setFeedbackState('error')
+      void buttonAnimationControls.start({
+        rotate: [0, -1, 1, -1, 1, 0],
+        scale: [1, 0.98, 1],
+        x: [0, -6, 6, -4, 4, 0],
+        transition: { duration: 0.35 },
+      })
+    } else {
+      setFeedbackState('success')
+      void buttonAnimationControls.start({
+        rotate: 0,
+        scale: 1,
+        x: 0,
+        transition: { duration: 0.2 },
+      })
+    }
+
+    const timeout = setTimeout(() => {
+      setFeedbackState('idle')
+      void buttonAnimationControls.start({
+        rotate: 0,
+        scale: 1,
+        x: 0,
+        transition: { duration: 0.2 },
+      })
+    }, 1800)
+
+    return () => {
+      clearTimeout(timeout)
+    }
+  }, [
+    buttonAnimationControls,
+    errorCount,
+    isSubmitSuccessful,
+    isSubmitting,
+    submitCount,
+  ])
+
   const submitButtonToneClassName = ((): string | undefined => {
     switch (submitButtonState) {
       case 'idle':
@@ -157,24 +215,6 @@ function SubmitButton(
         return undefined
     }
   })()
-  const submitButtonMotion = (() => {
-    switch (submitButtonState) {
-      case 'idle':
-      case 'submitting':
-      case 'success':
-        return { rotate: 0, scale: 1, x: 0 }
-      case 'error':
-        return {
-          rotate: [0, -1, 1, -1, 1, 0],
-          scale: [1, 0.98, 1],
-          x: [0, -6, 6, -4, 4, 0],
-        }
-      default:
-        submitButtonState satisfies never
-        return { rotate: 0, scale: 1, x: 0 }
-    }
-  })()
-
   if (!form) {
     throw new Error(
       'SubmitButton must be used within a ResolverForm or have a form prop',
@@ -187,11 +227,9 @@ function SubmitButton(
       aria-busy={isSubmitting}
       className={cn('min-w-44', submitButtonToneClassName, className)}
       form={explicitForm?.id}
-      key={`submit-${submitButtonState}-${submitCount}`}
       render={
         <motion.button
-          animate={submitButtonMotion}
-          transition={{ duration: 0.35 }}
+          animate={buttonAnimationControls}
           whileHover={isSubmitting ? undefined : { y: -1 }}
           whileTap={isSubmitting ? undefined : { scale: 0.98 }}
         />
