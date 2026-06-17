@@ -63,7 +63,7 @@ import {
   type ApiWeekday,
 } from './-bill-api'
 
-const currencies = ['USD', 'EUR', 'GBP'] as const
+const currencies = ['USD', 'EUR', 'GBP', 'SEK'] as const
 const billStatuses = ['draft', 'scheduled', 'sent', 'paid'] as const
 const editorModes = ['new', 'api'] as const
 const apiSubmitIntents = ['create', 'update'] as const
