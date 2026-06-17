@@ -15,6 +15,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "typecheck": "tsc --noEmit",
     "prepare": "husky",
     "lint": "oxlint . --react-plugin --jsx-a11y-plugin --import-plugin",
     "lint:fix": "oxlint . --fix --react-plugin --jsx-a11y-plugin --import-plugin",
@@ -83,6 +84,10 @@
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,jsonc,css}": "oxfmt --write --no-error-on-unmatched-pattern",
-    "*.{js,jsx,ts,tsx}": "oxlint --fix --react-plugin --jsx-a11y-plugin --import-plugin --no-error-on-unmatched-pattern"
+    "*.{js,jsx,ts,tsx}": [
+      "oxlint --fix --react-plugin --jsx-a11y-plugin --import-plugin --no-error-on-unmatched-pattern",
+      "sh -c 'pnpm typecheck'",
+      "sh -c 'pnpm build'"
+    ]
   }
 }
