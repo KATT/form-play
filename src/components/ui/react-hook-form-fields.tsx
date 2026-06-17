@@ -8,7 +8,14 @@ import {
 } from 'react-hook-form'
 
 import { Checkbox } from '@/components/ui/checkbox'
-import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  FieldTitle,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
@@ -222,29 +229,29 @@ function ControlledRadioCardGroup<
               const optionId = `${String(name)}-${option.value}`
 
               return (
-                <FieldLabel
-                  className={cn(
-                    'min-h-32 cursor-pointer items-start rounded-xl border p-4 transition-colors hover:bg-accent/50 has-data-checked:border-primary has-data-checked:bg-primary/5 has-data-checked:ring-1 has-data-checked:ring-ring',
-                    option.disabled && 'cursor-not-allowed opacity-50',
-                  )}
-                  htmlFor={optionId}
-                  key={option.value}
-                >
-                  <RadioGroupItem
-                    disabled={option.disabled}
-                    id={optionId}
-                    value={option.value}
-                  />
-                  <span className="flex flex-col gap-1">
-                    <span className="text-base font-semibold">
-                      {option.title}
-                    </span>
-                    {option.description ? (
-                      <span className="text-sm text-muted-foreground">
-                        {option.description}
-                      </span>
-                    ) : null}
-                  </span>
+                <FieldLabel htmlFor={optionId} key={option.value}>
+                  <Field
+                    data-disabled={option.disabled || undefined}
+                    orientation="horizontal"
+                    className={cn(
+                      'min-h-32 cursor-pointer rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
+                      option.disabled && 'cursor-not-allowed opacity-50',
+                    )}
+                  >
+                    <FieldContent>
+                      <FieldTitle>{option.title}</FieldTitle>
+                      {option.description ? (
+                        <FieldDescription>
+                          {option.description}
+                        </FieldDescription>
+                      ) : null}
+                    </FieldContent>
+                    <RadioGroupItem
+                      disabled={option.disabled}
+                      id={optionId}
+                      value={option.value}
+                    />
+                  </Field>
                 </FieldLabel>
               )
             })}
