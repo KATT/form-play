@@ -38,6 +38,7 @@ import {
 import {
   CheckboxField,
   ControlledCheckboxField,
+  ControlledRadioCardGroup,
   ControlledSelectInput,
   ControlledTextInput,
   ControlledTextareaInput,
@@ -80,6 +81,19 @@ const weekdays = [
   'saturday',
   'sunday',
 ] as const satisfies readonly ApiWeekday[]
+const billTypeOptions = [
+  {
+    value: 'one_off',
+    title: 'One-off',
+    description: 'Collect this bill once with a fixed due date.',
+  },
+  {
+    value: 'repeating',
+    title: 'Repeating',
+    description:
+      'Generate future bills on a daily, weekly, monthly, or yearly cadence.',
+  },
+] as const
 
 const routeSearchSchema = z.object({
   sections: z.array(z.enum(accordionSections)).catch(['create']),
@@ -384,25 +398,11 @@ function BillTypeSection({ form }: { form: BillForm }) {
         <CardTitle>Bill Type</CardTitle>
       </CardHeader>
       <CardContent>
-        <Controller
-          control={form.control}
+        <ControlledRadioCardGroup
+          form={form}
+          label="Bill type"
           name="billType"
-          render={({ field }) => (
-            <div className="grid gap-4 md:grid-cols-2">
-              <ChoiceCard
-                active={field.value === 'one_off'}
-                description="Collect this bill once with a fixed due date."
-                title="One-off"
-                onClick={() => field.onChange('one_off')}
-              />
-              <ChoiceCard
-                active={field.value === 'repeating'}
-                description="Generate future bills on a daily, weekly, monthly, or yearly cadence."
-                title="Repeating"
-                onClick={() => field.onChange('repeating')}
-              />
-            </div>
-          )}
+          options={billTypeOptions}
         />
 
         <FormConditional
@@ -695,32 +695,6 @@ function SubmissionPreviewCard({ form }: { form: BillForm }) {
       title="Derived submission preview"
       value={submissionPreview}
     />
-  )
-}
-
-function ChoiceCard({
-  active,
-  description,
-  onClick,
-  title,
-}: {
-  active: boolean
-  description: string
-  onClick: () => void
-  title: string
-}) {
-  return (
-    <Button
-      className="h-auto justify-start p-4 text-left"
-      type="button"
-      variant={active ? 'secondary' : 'outline'}
-      onClick={onClick}
-    >
-      <span className="block text-base font-semibold">{title}</span>
-      <span className="mt-1 block text-sm text-muted-foreground">
-        {description}
-      </span>
-    </Button>
   )
 }
 

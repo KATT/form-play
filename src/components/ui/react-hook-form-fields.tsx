@@ -11,7 +11,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
 
 type FormWithControl<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>
@@ -68,6 +70,21 @@ type ControlledCheckboxFieldProps<
   'checked' | 'defaultChecked' | 'form' | 'name' | 'onBlur' | 'onCheckedChange'
 > &
   ControlledFieldBase<TFieldValues, TName>
+
+type RadioCardOption = {
+  description?: React.ReactNode
+  disabled?: boolean
+  title: React.ReactNode
+  value: string
+}
+
+type ControlledRadioCardGroupProps<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+> = ControlledFieldBase<TFieldValues, TName> & {
+  className?: string
+  options: readonly RadioCardOption[]
+}
 
 function ControlledTextInput<
   TFieldValues extends FieldValues,
@@ -173,6 +190,58 @@ function ControlledCheckboxField<
         />
       )}
     />
+  )
+}
+
+function ControlledRadioCardGroup<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+>({
+  className,
+  form,
+  label,
+  name,
+  options,
+}: ControlledRadioCardGroupProps<TFieldValues, TName>) {
+  const error = getFieldError(form.formState.errors, name)
+
+  return (
+    <Field data-invalid={!!error}>
+      <FieldLabel>{label}</FieldLabel>
+      <Controller
+        control={form.control}
+        name={name}
+        render={({ field }) => (
+          <RadioGroup
+            aria-invalid={!!error}
+            className={cn('grid gap-4 md:grid-cols-2', className)}
+            value={field.value == null ? '' : String(field.value)}
+            onValueChange={(value) => field.onChange(value)}
+          >
+            {options.map((option) => (
+              <RadioGroupItem
+                className="h-auto w-full items-start justify-start rounded-xl p-4 text-left data-checked:bg-primary/5"
+                disabled={option.disabled}
+                key={option.value}
+                value={option.value}
+              >
+                <span className="ml-3 flex flex-col gap-1">
+                  <span className="text-base font-semibold">
+                    {option.title}
+                  </span>
+                  {option.description ? (
+                    <span className="text-sm text-muted-foreground">
+                      {option.description}
+                    </span>
+                  ) : null}
+                </span>
+              </RadioGroupItem>
+            ))}
+          </RadioGroup>
+        )}
+      />
+      <FieldError>{error}</FieldError>
+    </Field>
   )
 }
 
@@ -302,6 +371,7 @@ function CheckboxField({
 export {
   CheckboxField,
   ControlledCheckboxField,
+  ControlledRadioCardGroup,
   ControlledSelectInput,
   ControlledTextInput,
   ControlledTextareaInput,

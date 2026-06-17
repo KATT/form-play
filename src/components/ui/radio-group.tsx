@@ -13,7 +13,11 @@ function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
   )
 }
 
-function RadioGroupItem({ className, ...props }: RadioPrimitive.Root.Props) {
+function RadioGroupItem({
+  className,
+  children,
+  ...props
+}: RadioPrimitive.Root.Props) {
   return (
     <RadioPrimitive.Root
       data-slot="radio-group-item"
@@ -29,6 +33,7 @@ function RadioGroupItem({ className, ...props }: RadioPrimitive.Root.Props) {
       >
         <span className="absolute top-1/2 left-1/2 size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-foreground" />
       </RadioPrimitive.Indicator>
+      {children}
     </RadioPrimitive.Root>
   )
 }
