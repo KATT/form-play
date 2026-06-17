@@ -7,6 +7,7 @@ import {
   type FieldValues,
 } from 'react-hook-form'
 
+import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { NativeSelect } from '@/components/ui/native-select'
@@ -58,6 +59,15 @@ type ControlledTextareaInputProps<
   ControlledFieldBase<TFieldValues, TName> & {
     className?: string
   }
+
+type ControlledCheckboxFieldProps<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+> = Omit<
+  React.ComponentProps<typeof Checkbox>,
+  'checked' | 'defaultChecked' | 'form' | 'name' | 'onBlur' | 'onCheckedChange'
+> &
+  ControlledFieldBase<TFieldValues, TName>
 
 function ControlledTextInput<
   TFieldValues extends FieldValues,
@@ -132,6 +142,34 @@ function ControlledTextareaInput<
           value={field.value == null ? '' : String(field.value)}
           onBlur={field.onBlur}
           onChange={(event) => field.onChange(event.currentTarget.value)}
+        />
+      )}
+    />
+  )
+}
+
+function ControlledCheckboxField<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+>({
+  form,
+  label,
+  name,
+  ...props
+}: ControlledCheckboxFieldProps<TFieldValues, TName>) {
+  const error = getFieldError(form.formState.errors, name)
+
+  return (
+    <Controller
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <CheckboxField
+          {...props}
+          checked={!!field.value}
+          error={error}
+          label={label}
+          onCheckedChange={field.onChange}
         />
       )}
     />
@@ -235,4 +273,36 @@ function TextareaInput({
   )
 }
 
-export { ControlledSelectInput, ControlledTextInput, ControlledTextareaInput }
+function CheckboxField({
+  checked,
+  error,
+  label,
+  onCheckedChange,
+  ...props
+}: React.ComponentProps<typeof Checkbox> & {
+  error?: string
+  label: string
+}) {
+  return (
+    <Field data-invalid={!!error} orientation="horizontal">
+      <FieldLabel className="items-center">
+        <Checkbox
+          aria-invalid={!!error}
+          checked={checked}
+          onCheckedChange={onCheckedChange}
+          {...props}
+        />
+        {label}
+      </FieldLabel>
+      <FieldError>{error}</FieldError>
+    </Field>
+  )
+}
+
+export {
+  CheckboxField,
+  ControlledCheckboxField,
+  ControlledSelectInput,
+  ControlledTextInput,
+  ControlledTextareaInput,
+}

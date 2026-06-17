@@ -35,8 +35,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
+  CheckboxField,
+  ControlledCheckboxField,
   ControlledSelectInput,
   ControlledTextInput,
   ControlledTextareaInput,
@@ -468,16 +469,10 @@ function RecurrenceFrequencyFields({ form }: { form: BillForm }) {
         name="recurrence.frequency"
         render={(frequency) => frequency === 'daily' || frequency === 'weekly'}
       >
-        <Controller
-          control={form.control}
+        <WeekdayPicker
+          error={getRecurrenceError(form, 'weekdays')}
+          form={form}
           name="recurrence.weekdays"
-          render={({ field }) => (
-            <WeekdayPicker
-              error={getRecurrenceError(form, 'weekdays')}
-              selectedWeekdays={field.value ?? []}
-              onChange={field.onChange}
-            />
-          )}
         />
       </FormConditional>
       <FormConditional
@@ -584,16 +579,10 @@ function LineItemsSection({ form }: { form: BillForm }) {
                   type="number"
                 />
                 <div className="flex items-end gap-3">
-                  <Controller
-                    control={form.control}
+                  <ControlledCheckboxField
+                    form={form}
+                    label="Taxable"
                     name={`lineItems.${index}.taxable`}
-                    render={({ field }) => (
-                      <CheckboxField
-                        checked={!!field.value}
-                        label="Taxable"
-                        onCheckedChange={field.onChange}
-                      />
-                    )}
                   />
                   <Button
                     disabled={fields.length === 1}
@@ -638,16 +627,10 @@ function PaymentNotesSection({ form }: { form: BillForm }) {
             step="0.01"
             type="number"
           />
-          <Controller
-            control={form.control}
+          <ControlledCheckboxField
+            form={form}
+            label="Collect payment automatically"
             name="collectPaymentAutomatically"
-            render={({ field }) => (
-              <CheckboxField
-                checked={!!field.value}
-                label="Collect payment automatically"
-                onCheckedChange={field.onChange}
-              />
-            )}
           />
         </FieldGroup>
         <ControlledTextareaInput
@@ -771,54 +754,47 @@ function getRecurrenceError(form: BillForm, name: string) {
   return recurrenceErrors?.[name]?.message
 }
 
-function CheckboxField({
-  checked,
-  label,
-  onCheckedChange,
-}: {
-  checked: boolean
-  label: string
-  onCheckedChange: (checked: boolean) => void
-}) {
-  return (
-    <Field orientation="horizontal">
-      <FieldLabel className="items-center">
-        <Checkbox checked={checked} onCheckedChange={onCheckedChange} />
-        {label}
-      </FieldLabel>
-    </Field>
-  )
-}
-
 function WeekdayPicker({
   error,
-  onChange,
-  selectedWeekdays,
+  form,
+  name,
 }: {
   error?: string
-  onChange: (weekdays: ApiWeekday[]) => void
-  selectedWeekdays: ApiWeekday[]
+  form: BillForm
+  name: 'recurrence.weekdays'
 }) {
   return (
     <Field data-invalid={!!error} className="md:col-span-2">
       <FieldLabel>Weekdays</FieldLabel>
       <FieldGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {weekdays.map((weekday) => (
-          <CheckboxField
-            checked={selectedWeekdays.includes(weekday)}
-            key={weekday}
-            label={titleCase(weekday)}
-            onCheckedChange={(checked) => {
-              onChange(
-                checked
-                  ? [...selectedWeekdays, weekday]
-                  : selectedWeekdays.filter(
-                      (selectedWeekday) => selectedWeekday !== weekday,
-                    ),
-              )
-            }}
-          />
-        ))}
+        <Controller
+          control={form.control}
+          name={name}
+          render={({ field }) => {
+            const selectedWeekdays = field.value ?? []
+
+            return (
+              <>
+                {weekdays.map((weekday) => (
+                  <CheckboxField
+                    checked={selectedWeekdays.includes(weekday)}
+                    key={weekday}
+                    label={titleCase(weekday)}
+                    onCheckedChange={(checked) => {
+                      field.onChange(
+                        checked
+                          ? [...selectedWeekdays, weekday]
+                          : selectedWeekdays.filter(
+                              (selectedWeekday) => selectedWeekday !== weekday,
+                            ),
+                      )
+                    }}
+                  />
+                ))}
+              </>
+            )
+          }}
+        />
       </FieldGroup>
       <FieldDescription>
         Choose which weekdays should generate an occurrence.
