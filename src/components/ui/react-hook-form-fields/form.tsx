@@ -143,6 +143,37 @@ function SubmitButton(
 
     return 'idle'
   })()
+  const submitButtonToneClassName = ((): string | undefined => {
+    switch (submitButtonState) {
+      case 'idle':
+      case 'submitting':
+        return undefined
+      case 'success':
+        return 'bg-emerald-600 text-white hover:bg-emerald-600'
+      case 'error':
+        return 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+      default:
+        submitButtonState satisfies never
+        return undefined
+    }
+  })()
+  const submitButtonMotion = (() => {
+    switch (submitButtonState) {
+      case 'idle':
+      case 'submitting':
+      case 'success':
+        return { rotate: 0, scale: 1, x: 0 }
+      case 'error':
+        return {
+          rotate: [0, -1, 1, -1, 1, 0],
+          scale: [1, 0.98, 1],
+          x: [0, -6, 6, -4, 4, 0],
+        }
+      default:
+        submitButtonState satisfies never
+        return { rotate: 0, scale: 1, x: 0 }
+    }
+  })()
 
   if (!form) {
     throw new Error(
@@ -154,19 +185,12 @@ function SubmitButton(
     <Button
       {...passThrough}
       aria-busy={isSubmitting}
-      className={cn('relative min-w-44 overflow-hidden', className)}
+      className={cn('min-w-44', submitButtonToneClassName, className)}
       form={explicitForm?.id}
       key={`submit-${submitButtonState}-${submitCount}`}
       render={
         <motion.button
-          animate={
-            submitButtonState === 'error'
-              ? {
-                  rotate: [0, -1, 1, -1, 1, 0],
-                  x: [0, -6, 6, -4, 4, 0],
-                }
-              : { rotate: 0, x: 0 }
-          }
+          animate={submitButtonMotion}
           transition={{ duration: 0.35 }}
           whileHover={isSubmitting ? undefined : { y: -1 }}
           whileTap={isSubmitting ? undefined : { scale: 0.98 }}
@@ -175,78 +199,68 @@ function SubmitButton(
       type="submit"
       disabled={disabled || isSubmitting}
     >
-      <span className="relative z-10">{children}</span>
-      <AnimatePresence initial={false} mode="wait">
-        {(() => {
-          switch (submitButtonState) {
-            case 'idle':
-              return null
-            case 'submitting':
-              return (
-                <motion.span
-                  key="submitting"
-                  aria-hidden="true"
-                  className="absolute inset-0 z-20 flex items-center justify-center bg-primary text-primary-foreground"
-                  initial={{ clipPath: 'circle(0% at 50% 50%)', opacity: 0 }}
-                  animate={{
-                    clipPath: 'circle(140% at 50% 50%)',
-                    opacity: 1,
-                  }}
-                  exit={{ clipPath: 'circle(0% at 50% 50%)', opacity: 0 }}
-                  transition={{ type: 'spring', duration: 0.45, bounce: 0.2 }}
-                >
-                  <Spinner aria-hidden="true" role="presentation" />
-                </motion.span>
-              )
-            case 'success':
-              return (
-                <motion.span
-                  key="success"
-                  className="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-emerald-600 text-white"
-                  initial={{ clipPath: 'inset(0 100% 0 0)', opacity: 0 }}
-                  animate={{ clipPath: 'inset(0 0% 0 0)', opacity: 1 }}
-                  exit={{ clipPath: 'inset(0 0 0 100%)', opacity: 0 }}
-                  transition={{ type: 'spring', duration: 0.5, bounce: 0.25 }}
-                >
+      <span>{children}</span>
+      <span
+        aria-hidden="true"
+        data-icon="inline-end"
+        className="inline-grid size-4 shrink-0 place-items-center"
+      >
+        <AnimatePresence initial={false} mode="wait">
+          {(() => {
+            switch (submitButtonState) {
+              case 'idle':
+                return null
+              case 'submitting':
+                return (
                   <motion.span
-                    initial={{ scale: 0, rotate: -90 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: 'spring', duration: 0.45, bounce: 0.6 }}
+                    key="submitting"
+                    initial={{ opacity: 0, scale: 0.7, y: -6 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.7, y: 6 }}
+                    transition={{
+                      type: 'spring',
+                      duration: 0.28,
+                      bounce: 0.25,
+                    }}
+                  >
+                    <Spinner aria-hidden="true" role="presentation" />
+                  </motion.span>
+                )
+              case 'success':
+                return (
+                  <motion.span
+                    key="success"
+                    initial={{ opacity: 0, scale: 0, rotate: -90 }}
+                    animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                    exit={{ opacity: 0, scale: 0, rotate: 90 }}
+                    transition={{
+                      type: 'spring',
+                      duration: 0.45,
+                      bounce: 0.6,
+                    }}
                   >
                     <CheckIcon aria-hidden="true" />
                   </motion.span>
-                  Submitted
-                </motion.span>
-              )
-            case 'error':
-              return (
-                <motion.span
-                  key="error"
-                  className="absolute inset-0 z-20 flex items-center justify-center gap-2 bg-destructive text-destructive-foreground"
-                  initial={{ clipPath: 'circle(0% at 50% 50%)', opacity: 0 }}
-                  animate={{
-                    clipPath: 'circle(140% at 50% 50%)',
-                    opacity: 1,
-                  }}
-                  exit={{ clipPath: 'circle(0% at 50% 50%)', opacity: 0 }}
-                  transition={{ type: 'spring', duration: 0.42, bounce: 0.35 }}
-                >
+                )
+              case 'error':
+                return (
                   <motion.span
-                    initial={{ scale: 0.75 }}
-                    animate={{ scale: [1, 1.18, 1] }}
+                    key="error"
+                    initial={{ opacity: 0, scale: 0.75 }}
+                    animate={{ opacity: 1, scale: [1, 1.18, 1] }}
+                    exit={{ opacity: 0, scale: 0.75 }}
                     transition={{ duration: 0.35 }}
                   >
                     <XIcon aria-hidden="true" />
                   </motion.span>
-                  Try again
-                </motion.span>
-              )
-            default:
-              submitButtonState satisfies never
-              return null
-          }
-        })()}
-      </AnimatePresence>
+                )
+              default:
+                submitButtonState satisfies never
+                return null
+            }
+          })()}
+        </AnimatePresence>
+      </span>
     </Button>
   )
 }
