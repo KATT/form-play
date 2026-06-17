@@ -49,13 +49,23 @@ function ControlledMoneyInput<
   placeholder,
   ...props
 }: ControlledMoneyInputProps<TFieldValues, TName, TTransformedValues>) {
-  const currencySymbol = useMemo(() => {
+  const currencyAdornment = useMemo(() => {
     const parts = new Intl.NumberFormat(locale, {
       currency,
       style: 'currency',
     }).formatToParts(0)
+    const currencyIndex = parts.findIndex((part) => part.type === 'currency')
+    const numberIndex = parts.findIndex((part) =>
+      ['integer', 'decimal', 'fraction'].includes(part.type),
+    )
 
-    return parts.find((part) => part.type === 'currency')?.value ?? currency
+    return {
+      align:
+        currencyIndex > numberIndex && numberIndex !== -1
+          ? 'inline-end'
+          : 'inline-start',
+      value: parts[currencyIndex]?.value ?? currency,
+    }
   }, [currency, locale])
   const inputId = useId()
 
@@ -70,9 +80,11 @@ function ControlledMoneyInput<
           <Field data-invalid={!!error}>
             <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
             <InputGroup>
-              <InputGroupAddon align="inline-start">
-                <InputGroupText>{currencySymbol}</InputGroupText>
-              </InputGroupAddon>
+              {currencyAdornment.align === 'inline-start' ? (
+                <InputGroupAddon align="inline-start">
+                  <InputGroupText>{currencyAdornment.value}</InputGroupText>
+                </InputGroupAddon>
+              ) : null}
               <InputGroupInput
                 {...props}
                 aria-invalid={!!error}
@@ -95,6 +107,11 @@ function ControlledMoneyInput<
                 }}
                 onChange={(event) => field.onChange(event.currentTarget.value)}
               />
+              {currencyAdornment.align === 'inline-end' ? (
+                <InputGroupAddon align="inline-end">
+                  <InputGroupText>{currencyAdornment.value}</InputGroupText>
+                </InputGroupAddon>
+              ) : null}
             </InputGroup>
             <FieldError>{error}</FieldError>
           </Field>
