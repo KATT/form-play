@@ -32,15 +32,17 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { FormConditional } from '@/components/ui/react-hook-form-fields/form-conditional'
+import { ControlledCheckboxField } from '@/components/ui/react-hook-form-fields/checkbox-field'
 import {
-  ControlledCheckboxField,
   ControlledMoneyInput,
-  ControlledRadioCardGroup,
-  ControlledSelectInput,
-  ControlledTextInput,
-  ControlledTextareaInput,
-  FormConditional,
-} from '@/components/ui/react-hook-form-fields'
+  createCurrencyAmountSchema,
+  parseCurrencyAmountInput,
+} from '@/components/ui/react-hook-form-fields/money-input'
+import { ControlledRadioCardGroup } from '@/components/ui/react-hook-form-fields/radio-card-group'
+import { ControlledSelectInput } from '@/components/ui/react-hook-form-fields/select-input'
+import { ControlledTextInput } from '@/components/ui/react-hook-form-fields/text-input'
+import { ControlledTextareaInput } from '@/components/ui/react-hook-form-fields/textarea-input'
 import {
   Field,
   FieldDescription,
@@ -1109,7 +1111,7 @@ function calculateTotals(
     (total, item) =>
       total +
       ((Number(item.quantity) || 0) *
-        parseCurrencyAmountInput(item.unitAmountCents)) /
+        parseCurrencyAmountInput(currencyAmountSchema, item.unitAmountCents)) /
         100,
     0,
   )
@@ -1118,7 +1120,10 @@ function calculateTotals(
       item.taxable
         ? total +
           ((Number(item.quantity) || 0) *
-            parseCurrencyAmountInput(item.unitAmountCents)) /
+            parseCurrencyAmountInput(
+              currencyAmountSchema,
+              item.unitAmountCents,
+            )) /
             100
         : total,
     0,
@@ -1145,41 +1150,6 @@ function getMoneyFormatter(currency: string) {
     currency,
     style: 'currency',
   })
-}
-
-function createCurrencyAmountSchema(
-  requiredMessage: string,
-  centsSchema: z.ZodType<number, number>,
-) {
-  return z.codec(
-    z
-      .string()
-      .min(1, requiredMessage)
-      .regex(/^\d+(\.\d{1,2})?$/, 'Use a valid money amount'),
-    centsSchema,
-    {
-      decode: parseCurrencyAmountString,
-      encode: formatCurrencyAmountCents,
-    },
-  )
-}
-
-function parseCurrencyAmountInput(value: unknown) {
-  const parsed = currencyAmountSchema.safeParse(value)
-
-  return parsed.success ? parsed.data : 0
-}
-
-function parseCurrencyAmountString(value: string) {
-  const [major = '0', minor = ''] = String(value ?? '').split('.')
-  const normalizedMajor = major === '' ? '0' : major
-  const normalizedMinor = minor.padEnd(2, '0').slice(0, 2)
-
-  return Number(normalizedMajor) * 100 + Number(normalizedMinor)
-}
-
-function formatCurrencyAmountCents(value: number) {
-  return (value / 100).toFixed(2)
 }
 
 function titleCase(value: string) {
