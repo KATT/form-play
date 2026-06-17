@@ -562,78 +562,98 @@ function BillTypeSection({ form }: { form: BillForm }) {
           </ConditionalTooltip>
         </ControlledRadioCardGroup>
 
-        <FieldGroup className="mt-5 grid gap-4 md:grid-cols-2">
-          <ControlledTextInput
-            control={form.control}
-            label="Issue anchor date"
-            name="issueDate"
-            type="date"
-          />
-          <FormConditional
-            control={form.control}
-            name="billType"
-            render={(billType) => billType === 'one_off'}
-          >
-            <ControlledTextInput
-              control={form.control}
-              label="Due date"
-              name="dueDate"
-              type="date"
-            />
-          </FormConditional>
-        </FieldGroup>
+        <FormConditional
+          control={form.control}
+          name="billType"
+          render={(billType) => billType === 'one_off'}
+        >
+          <OneOffScheduleFields form={form} />
+        </FormConditional>
 
         <FormConditional
           control={form.control}
           name="billType"
           render={(currentBillType) => currentBillType === 'repeating'}
         >
-          <Card className="mt-5">
-            <CardContent>
-              <FieldGroup className="grid gap-4 md:grid-cols-2">
-                <ControlledSelectInput
-                  control={form.control}
-                  label="Frequency"
-                  name="recurrence.frequency"
-                >
-                  {recurrenceFrequencies.map((frequency) => (
-                    <NativeSelectOption key={frequency} value={frequency}>
-                      {titleCase(frequency)}
-                    </NativeSelectOption>
-                  ))}
-                </ControlledSelectInput>
-                <ControlledTextInput
-                  control={form.control}
-                  label="Every"
-                  min={1}
-                  name="recurrence.interval"
-                  type="number"
-                />
-                <ControlledTextInput
-                  control={form.control}
-                  label="Starts on"
-                  name="recurrence.startsOn"
-                  type="date"
-                />
-                <RecurrenceFrequencyFields form={form} />
-                <ControlledSelectInput
-                  control={form.control}
-                  label="Ends"
-                  name="recurrence.endStrategy"
-                >
-                  <NativeSelectOption value="never">Never</NativeSelectOption>
-                  <NativeSelectOption value="on_date">
-                    On a date
-                  </NativeSelectOption>
-                  <NativeSelectOption value="after_occurrences">
-                    After occurrences
-                  </NativeSelectOption>
-                </ControlledSelectInput>
-                <RecurrenceEndFields form={form} />
-              </FieldGroup>
-            </CardContent>
-          </Card>
+          <RepeatingScheduleFields form={form} />
         </FormConditional>
+      </CardContent>
+    </Card>
+  )
+}
+
+function OneOffScheduleFields({ form }: { form: BillForm }) {
+  return (
+    <Card className="mt-5">
+      <CardContent>
+        <FieldGroup className="grid gap-4 md:grid-cols-2">
+          <ControlledTextInput
+            control={form.control}
+            label="Issue date"
+            name="issueDate"
+            type="date"
+          />
+          <ControlledTextInput
+            control={form.control}
+            label="Due date"
+            name="dueDate"
+            type="date"
+          />
+        </FieldGroup>
+      </CardContent>
+    </Card>
+  )
+}
+
+function RepeatingScheduleFields({ form }: { form: BillForm }) {
+  return (
+    <Card className="mt-5">
+      <CardContent>
+        <FieldGroup className="grid gap-4 md:grid-cols-2">
+          <ControlledTextInput
+            control={form.control}
+            label="First issue date"
+            name="issueDate"
+            type="date"
+          />
+          <ControlledSelectInput
+            control={form.control}
+            label="Frequency"
+            name="recurrence.frequency"
+          >
+            {recurrenceFrequencies.map((frequency) => (
+              <NativeSelectOption key={frequency} value={frequency}>
+                {titleCase(frequency)}
+              </NativeSelectOption>
+            ))}
+          </ControlledSelectInput>
+          <ControlledTextInput
+            control={form.control}
+            label="Every"
+            min={1}
+            name="recurrence.interval"
+            type="number"
+          />
+          <ControlledTextInput
+            control={form.control}
+            label="Starts on"
+            name="recurrence.startsOn"
+            type="date"
+          />
+          <RecurrenceFrequencyFields form={form} />
+          <ControlledSelectInput
+            control={form.control}
+            label="Ends"
+            name="recurrence.endStrategy"
+          >
+            <NativeSelectOption value="never">Never</NativeSelectOption>
+            <NativeSelectOption value="on_date">On a date</NativeSelectOption>
+            <NativeSelectOption value="after_occurrences">
+              After occurrences
+            </NativeSelectOption>
+          </ControlledSelectInput>
+          <RecurrenceEndFields form={form} />
+        </FieldGroup>
       </CardContent>
     </Card>
   )
