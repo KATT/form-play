@@ -32,6 +32,9 @@ type SubmitButtonState =
 type SubmitButtonFeedbackState = Exclude<SubmitButtonState, 'submitting'>
 type SubmitButtonIconPosition = 'end' | 'start'
 
+const submitButtonFeedbackCooldownMs = 1800
+const submitButtonTransitionSeconds = 0.3
+
 type UseResolverForm<
   TInput extends FieldValues,
   TOutput,
@@ -196,7 +199,7 @@ function SubmitButton(
 
     const timeout = setTimeout(() => {
       resetButtonFeedback()
-    }, 1800)
+    }, submitButtonFeedbackCooldownMs)
 
     return () => {
       clearTimeout(timeout)
@@ -267,7 +270,11 @@ function SubmitButton(
                   initial={{ opacity: 0, scale: 0.7, y: -6 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.7, y: 6 }}
-                  transition={{ type: 'spring', duration: 0.28, bounce: 0.25 }}
+                  transition={{
+                    type: 'spring',
+                    duration: submitButtonTransitionSeconds,
+                    bounce: 0.25,
+                  }}
                 >
                   <Icon aria-hidden="true" />
                 </motion.span>
@@ -279,7 +286,11 @@ function SubmitButton(
                   initial={{ opacity: 0, scale: 0.7, y: -6 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.7, y: 6 }}
-                  transition={{ type: 'spring', duration: 0.28, bounce: 0.25 }}
+                  transition={{
+                    type: 'spring',
+                    duration: submitButtonTransitionSeconds,
+                    bounce: 0.25,
+                  }}
                 >
                   <Spinner aria-hidden="true" role="presentation" />
                 </motion.span>
@@ -291,7 +302,11 @@ function SubmitButton(
                   initial={{ opacity: 0, scale: 0, rotate: -90 }}
                   animate={{ opacity: 1, scale: 1, rotate: 0 }}
                   exit={{ opacity: 0, scale: 0, rotate: 90 }}
-                  transition={{ type: 'spring', duration: 0.45, bounce: 0.6 }}
+                  transition={{
+                    type: 'spring',
+                    duration: submitButtonTransitionSeconds,
+                    bounce: 0.6,
+                  }}
                 >
                   <CheckIcon aria-hidden="true" />
                 </motion.span>
@@ -303,7 +318,7 @@ function SubmitButton(
                   initial={{ opacity: 0, scale: 0.75, rotate: -12 }}
                   animate={{ opacity: 1, scale: [1, 1.12, 1], rotate: 0 }}
                   exit={{ opacity: 0, scale: 0.75, rotate: 12 }}
-                  transition={{ duration: 0.35 }}
+                  transition={{ duration: submitButtonTransitionSeconds }}
                 >
                   <TriangleAlertIcon aria-hidden="true" />
                 </motion.span>
@@ -315,7 +330,7 @@ function SubmitButton(
                   initial={{ opacity: 0, scale: 0.75 }}
                   animate={{ opacity: 1, scale: [1, 1.18, 1] }}
                   exit={{ opacity: 0, scale: 0.75 }}
-                  transition={{ duration: 0.35 }}
+                  transition={{ duration: submitButtonTransitionSeconds }}
                 >
                   <XIcon aria-hidden="true" />
                 </motion.span>
@@ -333,18 +348,17 @@ function SubmitButton(
     <Button
       {...passThrough}
       aria-busy={isSubmitting}
-      className={cn('min-w-44', submitButtonToneClassName, className)}
+      className={cn(
+        'min-w-44 transition-colors duration-300 ease-in-out',
+        submitButtonToneClassName,
+        className,
+      )}
       form={explicitForm?.id}
       render={
         <motion.button
           animate={submitButtonMotion}
-          key={`${submitButtonState}-${submitCount}`}
           transition={{
-            duration:
-              submitButtonState === 'input-error' ||
-              submitButtonState === 'server-error'
-                ? 0.5
-                : 0.25,
+            duration: submitButtonTransitionSeconds,
             ease: 'easeInOut',
           }}
           whileHover={isSubmitting ? undefined : { y: -1 }}
