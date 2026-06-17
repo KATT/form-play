@@ -6,12 +6,7 @@ import githubDarkTheme from '@shikijs/themes/github-dark'
 import githubLightTheme from '@shikijs/themes/github-light'
 import { createFileRoute } from '@tanstack/react-router'
 import { Suspense, use, useDeferredValue, useMemo } from 'react'
-import {
-  type UseFormReturn,
-  useFieldArray,
-  useForm,
-  useWatch,
-} from 'react-hook-form'
+import { type UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
 import {
@@ -31,6 +26,10 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { ConditionalTooltip } from '@/components/ui/conditional-tooltip'
+import {
+  ResolverForm,
+  useResolverForm,
+} from '@/components/ui/react-hook-form-fields/form'
 import { FormConditional } from '@/components/ui/react-hook-form-fields/form-conditional'
 import {
   ControlledCheckboxGroup,
@@ -475,7 +474,7 @@ function UpsertBillForm({
   sourceTitle: string
   sourceValue: unknown
 }) {
-  const form = useForm<BillFormInputValues, unknown, BillFormSubmission>({
+  const form = useResolverForm<BillFormInputValues, BillFormSubmission>({
     resolver: zodResolver(billFormSchema),
     defaultValues,
     values: defaultValues,
@@ -487,18 +486,19 @@ function UpsertBillForm({
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
       <section>
-        <form
+        <ResolverForm
           className="flex flex-col gap-6"
-          onSubmit={form.handleSubmit((submission) => {
+          form={form}
+          handleSubmit={(submission) => {
             console.info('Submitting bill', submission)
-          })}
+          }}
         >
           <BillDetailsSection control={form.control} />
           <BillTypeSection control={form.control} />
           <LineItemsSection control={form.control} locale={locale} />
           <PaymentNotesSection control={form.control} />
           <SubmissionSection control={form.control} locale={locale} />
-        </form>
+        </ResolverForm>
       </section>
 
       <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
