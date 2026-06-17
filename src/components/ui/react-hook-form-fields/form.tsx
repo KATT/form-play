@@ -29,7 +29,7 @@ type SubmitButtonState =
   | 'server-error'
   | 'submitting'
   | 'success'
-type SubmitButtonFeedbackState = Exclude<SubmitButtonState, 'submitting'>
+type SubmitButtonFeedbackState = Exclude<SubmitButtonState, 'idle' | 'submitting'>
 type SubmitButtonIconPosition = 'end' | 'start'
 
 const submitButtonFeedbackCooldownMs = 1800
@@ -148,8 +148,7 @@ function SubmitButton(
   const context = useFormContext()
   const Icon = icon
   const lastSettledSubmitCount = useRef(0)
-  const [feedbackState, setFeedbackState] =
-    useState<SubmitButtonFeedbackState>('idle')
+  const [isFeedbackSettled, setIsFeedbackSettled] = useState(true)
 
   const form = explicitForm ?? context
   const formState = form?.formState
@@ -174,49 +173,41 @@ function SubmitButton(
       return 'submitting'
     }
 
-    return feedbackState
-  })()
-  const shouldResetStaleFeedback =
-    feedbackState === 'input-error' && errorCount === 0
-
-  useEffect(() => {
-    const resetButtonFeedback = () => {
-      setFeedbackState('idle')
+    if (isFeedbackSettled) {
+      return 'idle'
     }
 
+    return settledSubmitState ?? 'idle'
+  })()
+
+  useEffect(() => {
     if (isSubmitting) {
-      resetButtonFeedback()
+      setIsFeedbackSettled(true)
       return
     }
 
-    if (shouldResetStaleFeedback) {
-      resetButtonFeedback()
+    if (!settledSubmitState) {
+      setIsFeedbackSettled(true)
       return
     }
 
     if (
-      !settledSubmitState ||
       lastSettledSubmitCount.current === submitCount
     ) {
       return
     }
 
     lastSettledSubmitCount.current = submitCount
-    setFeedbackState(settledSubmitState)
+    setIsFeedbackSettled(false)
 
     const timeout = setTimeout(() => {
-      resetButtonFeedback()
+      setIsFeedbackSettled(true)
     }, submitButtonFeedbackCooldownMs)
 
     return () => {
       clearTimeout(timeout)
     }
-  }, [
-    isSubmitting,
-    settledSubmitState,
-    shouldResetStaleFeedback,
-    submitCount,
-  ])
+  }, [isSubmitting, settledSubmitState, submitCount])
 
   const submitButtonMotion = (() => {
     switch (submitButtonState) {
