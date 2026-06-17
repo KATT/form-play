@@ -221,14 +221,122 @@ const repeatingBillSchema = baseBillSchema.extend({
   recurrence: recurrenceSchema,
 })
 
-const billFormSchema = z.discriminatedUnion('billType', [
+const billFormInputSchema = z.discriminatedUnion('billType', [
   oneOffBillSchema,
   repeatingBillSchema,
 ])
 
+const billFormSchema = billFormInputSchema.transform((values): ApiSubmission => {
+  const schedule =
+    values.billType === 'repeating'
+      ? (() => {
+          const recurrence = values.recurrence
+          const end = {
+            ends_on:
+              recurrence.endStrategy === 'on_date'
+                ? (recurrence.endsOn ?? null)
+                : null,
+            max_occurrences:
+              recurrence.endStrategy === 'after_occurrences'
+                ? (recurrence.occurrenceCount ?? null)
+                : null,
+          }
+
+          switch (recurrence.frequency) {
+            case 'daily':
+            case 'weekly':
+              return {
+                ...end,
+                frequency: recurrence.frequency,
+                interval: recurrence.interval,
+                starts_on: recurrence.startsOn,
+                weekdays: recurrence.weekdays,
+              }
+            case 'monthly': {
+              const anchorDate = recurrence.monthlyAnchorDate
+
+              return {
+                ...end,
+                frequency: 'monthly' as const,
+                interval: recurrence.interval,
+                starts_on: recurrence.startsOn,
+                anchor_date: anchorDate,
+                day_of_month: getDateDay(anchorDate),
+                day_overflow: 'last_day' as const,
+              }
+            }
+            case 'yearly': {
+              const anchorDate = recurrence.yearlyAnchorDate
+
+              return {
+                ...end,
+                frequency: 'yearly' as const,
+                interval: recurrence.interval,
+                starts_on: recurrence.startsOn,
+                anchor_date: anchorDate,
+                month: getDateMonth(anchorDate),
+                day: getDateDay(anchorDate),
+                day_overflow: 'last_day' as const,
+              }
+            }
+          }
+        })()
+      : null
+
+  const sharedPayload = {
+    kind: values.billType,
+    customer: {
+      name: values.customerName,
+      email: values.customerEmail,
+    },
+    status: values.status,
+    issue_date: values.issueDate,
+    due_date: values.billType === 'one_off' ? values.dueDate : null,
+    currency: values.currency,
+    tax_rate_bps: Math.round(values.taxRate * 100),
+    auto_collect: values.collectPaymentAutomatically,
+    memo: values.memo || null,
+    schedule,
+  }
+
+  if (values.submitIntent === 'create') {
+    return {
+      endpoint: '/api/bills',
+      method: 'POST',
+      body: {
+        ...sharedPayload,
+        line_items: values.lineItems.map((item) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unit_amount_cents: item.unitAmountCents,
+          taxable: item.taxable,
+        })),
+      },
+    }
+  }
+
+  const billId = values.billId ?? ':billId'
+
+  return {
+    endpoint: `/api/bills/${billId}`,
+    method: 'PATCH',
+    body: {
+      id: billId,
+      ...sharedPayload,
+      line_items: values.lineItems.map((item) => ({
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity,
+        unit_amount_cents: item.unitAmountCents,
+        taxable: item.taxable,
+      })),
+    },
+  }
+})
+
 type BillFormInputValues = z.input<typeof billFormSchema>
-type BillFormValues = z.output<typeof billFormSchema>
-type BillForm = UseFormReturn<BillFormInputValues, unknown, BillFormValues>
+type BillFormSubmission = z.output<typeof billFormSchema>
+type BillForm = UseFormReturn<BillFormInputValues, unknown, BillFormSubmission>
 
 function Home() {
   const search = Route.useSearch()
@@ -319,7 +427,7 @@ function UpsertBillForm({
   sourceTitle: string
   sourceValue: unknown
 }) {
-  const form = useForm<BillFormInputValues, unknown, BillFormValues>({
+  const form = useForm<BillFormInputValues, unknown, BillFormSubmission>({
     resolver: zodResolver(billFormSchema),
     defaultValues,
     values: defaultValues,
@@ -333,11 +441,8 @@ function UpsertBillForm({
       <section>
         <form
           className="flex flex-col gap-6"
-          onSubmit={form.handleSubmit(() => {
-            console.info(
-              'Submitting bill',
-              toApiSubmission.parse(form.getValues()),
-            )
+          onSubmit={form.handleSubmit((submission) => {
+            console.info('Submitting bill', submission)
           })}
         >
           <BillDetailsSection form={form} />
@@ -755,7 +860,7 @@ function SubmissionSection({ form }: { form: BillForm }) {
 
 function SubmissionPreviewCard({ form }: { form: BillForm }) {
   const watchedValues = useWatch({ control: form.control })
-  const parsedSubmission = toApiSubmission.safeParse(watchedValues)
+  const parsedSubmission = billFormSchema.safeParse(watchedValues)
   const submissionPreview = parsedSubmission.success
     ? parsedSubmission.data
     : 'Complete the required fields to inspect the API submission.'
@@ -1015,114 +1120,6 @@ function getDefaultRecurrence(): NonNullable<
     occurrenceCount: undefined,
   }
 }
-
-const toApiSubmission = billFormSchema.transform((values): ApiSubmission => {
-  const schedule =
-    values.billType === 'repeating'
-      ? (() => {
-          const recurrence = values.recurrence
-          const end = {
-            ends_on:
-              recurrence.endStrategy === 'on_date'
-                ? (recurrence.endsOn ?? null)
-                : null,
-            max_occurrences:
-              recurrence.endStrategy === 'after_occurrences'
-                ? (recurrence.occurrenceCount ?? null)
-                : null,
-          }
-
-          switch (recurrence.frequency) {
-            case 'daily':
-            case 'weekly':
-              return {
-                ...end,
-                frequency: recurrence.frequency,
-                interval: recurrence.interval,
-                starts_on: recurrence.startsOn,
-                weekdays: recurrence.weekdays,
-              }
-            case 'monthly': {
-              const anchorDate = recurrence.monthlyAnchorDate
-
-              return {
-                ...end,
-                frequency: 'monthly' as const,
-                interval: recurrence.interval,
-                starts_on: recurrence.startsOn,
-                anchor_date: anchorDate,
-                day_of_month: getDateDay(anchorDate),
-                day_overflow: 'last_day' as const,
-              }
-            }
-            case 'yearly': {
-              const anchorDate = recurrence.yearlyAnchorDate
-
-              return {
-                ...end,
-                frequency: 'yearly' as const,
-                interval: recurrence.interval,
-                starts_on: recurrence.startsOn,
-                anchor_date: anchorDate,
-                month: getDateMonth(anchorDate),
-                day: getDateDay(anchorDate),
-                day_overflow: 'last_day' as const,
-              }
-            }
-          }
-        })()
-      : null
-
-  const sharedPayload = {
-    kind: values.billType,
-    customer: {
-      name: values.customerName,
-      email: values.customerEmail,
-    },
-    status: values.status,
-    issue_date: values.issueDate,
-    due_date: values.billType === 'one_off' ? values.dueDate : null,
-    currency: values.currency,
-    tax_rate_bps: Math.round(values.taxRate * 100),
-    auto_collect: values.collectPaymentAutomatically,
-    memo: values.memo || null,
-    schedule,
-  }
-
-  if (values.submitIntent === 'create') {
-    return {
-      endpoint: '/api/bills',
-      method: 'POST',
-      body: {
-        ...sharedPayload,
-        line_items: values.lineItems.map((item) => ({
-          description: item.description,
-          quantity: item.quantity,
-          unit_amount_cents: item.unitAmountCents,
-          taxable: item.taxable,
-        })),
-      },
-    }
-  }
-
-  const billId = values.billId ?? ':billId'
-
-  return {
-    endpoint: `/api/bills/${billId}`,
-    method: 'PATCH',
-    body: {
-      id: billId,
-      ...sharedPayload,
-      line_items: values.lineItems.map((item) => ({
-        id: item.id,
-        description: item.description,
-        quantity: item.quantity,
-        unit_amount_cents: item.unitAmountCents,
-        taxable: item.taxable,
-      })),
-    },
-  }
-})
 
 function getDateMonth(value: string) {
   return Number(value.slice(5, 7))
