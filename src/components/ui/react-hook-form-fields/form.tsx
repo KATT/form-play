@@ -129,13 +129,9 @@ function SubmitButton(
       disabled={disabled || formState.isSubmitting}
     >
       {formState.isSubmitting ? (
-        <>
-          <Spinner aria-hidden="true" data-icon="inline-start" />
-          <span>Loading</span>
-        </>
-      ) : (
-        children
-      )}
+        <Spinner aria-hidden="true" data-icon="inline-start" />
+      ) : null}
+      {children}
     </Button>
   )
 }
