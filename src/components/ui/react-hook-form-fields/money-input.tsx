@@ -72,7 +72,7 @@ function ControlledMoneyInput<
                 name={field.name}
                 placeholder={placeholder ?? `0.00 ${currency}`}
                 ref={field.ref}
-                type="text"
+                type="number"
                 value={field.value == null ? '' : String(field.value)}
                 onBlur={() => {
                   const formattedValue = formatCurrencyAmountInput(field.value)
