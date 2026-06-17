@@ -54,7 +54,7 @@ import {
   FieldGroup,
   FieldTitle,
 } from '@/components/ui/field'
-import { NativeSelectOption } from '@/components/ui/native-select'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   sampleApiBill,
@@ -74,6 +74,14 @@ const recurrenceEndStrategies = [
   'after_occurrences',
 ] as const
 const accordionSections = ['create', 'edit'] as const
+const appLocales = ['en-US', 'en-GB', 'de-DE', 'fr-FR', 'ja-JP'] as const
+const appLocaleLabels: Record<(typeof appLocales)[number], string> = {
+  'de-DE': 'Deutsch (Deutschland)',
+  'en-GB': 'English (United Kingdom)',
+  'en-US': 'English (United States)',
+  'fr-FR': 'Français (France)',
+  'ja-JP': '日本語 (日本)',
+}
 const weekdays = [
   'monday',
   'tuesday',
@@ -84,8 +92,11 @@ const weekdays = [
   'sunday',
 ] as const satisfies readonly ApiWeekday[]
 const routeSearchSchema = z.object({
+  locale: z.enum(appLocales).catch('en-US'),
   sections: z.array(z.enum(accordionSections)).catch(['create']),
 })
+
+type AppLocale = (typeof appLocales)[number]
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -334,20 +345,40 @@ type RecurrenceInputValues = NonNullable<BillFormInputValues['recurrence']>
 function Home() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
+  const locale = search.locale
   const openSections = search.sections
 
   return (
-    <main className="min-h-screen bg-background px-6 py-10 text-foreground">
+    <main
+      className="min-h-screen bg-background px-6 py-10 text-foreground"
+      lang={locale}
+    >
       <div className="mx-auto max-w-7xl">
-        <Badge variant="secondary">React Hook Form + Zod</Badge>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight">
-          Bill editor example
-        </h1>
-        <p className="mt-4 max-w-3xl text-pretty text-muted-foreground">
-          This single route models create and edit bill forms side by side. Each
-          accordion renders its own <code>UpsertBillForm</code>, with fresh
-          defaults or defaults mapped from an imaginary API bill.
-        </p>
+        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+          <div>
+            <Badge variant="secondary">React Hook Form + Zod</Badge>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight">
+              Bill editor example
+            </h1>
+            <p className="mt-4 max-w-3xl text-pretty text-muted-foreground">
+              This single route models create and edit bill forms side by side.
+              Each accordion renders its own <code>UpsertBillForm</code>, with
+              fresh defaults or defaults mapped from an imaginary API bill.
+            </p>
+          </div>
+          <LocaleSelect
+            locale={locale}
+            onLocaleChange={(nextLocale) => {
+              navigate({
+                resetScroll: false,
+                search: (previous) => ({
+                  ...previous,
+                  locale: nextLocale,
+                }),
+              })
+            }}
+          />
+        </div>
 
         <Accordion
           keepMounted
@@ -383,6 +414,7 @@ function Home() {
             <AccordionContent>
               <UpsertBillForm
                 defaultValues={createBillDefaultValues}
+                locale={locale}
                 sourceTitle="New bill defaults"
                 sourceValue={createBillDefaultValues}
               />
@@ -403,6 +435,7 @@ function Home() {
             <AccordionContent>
               <UpsertBillForm
                 defaultValues={editBillDefaultValues}
+                locale={locale}
                 sourceTitle="API bill response"
                 sourceValue={sampleApiBill}
               />
@@ -416,10 +449,12 @@ function Home() {
 
 function UpsertBillForm({
   defaultValues,
+  locale,
   sourceTitle,
   sourceValue,
 }: {
   defaultValues: BillFormInputValues
+  locale: AppLocale
   sourceTitle: string
   sourceValue: unknown
 }) {
@@ -443,9 +478,9 @@ function UpsertBillForm({
         >
           <BillDetailsSection control={form.control} />
           <BillTypeSection control={form.control} />
-          <LineItemsSection control={form.control} />
+          <LineItemsSection control={form.control} locale={locale} />
           <PaymentNotesSection control={form.control} />
-          <SubmissionSection control={form.control} />
+          <SubmissionSection control={form.control} locale={locale} />
         </form>
       </section>
 
@@ -454,6 +489,41 @@ function UpsertBillForm({
         <SubmissionPreviewCard control={form.control} />
       </aside>
     </div>
+  )
+}
+
+function LocaleSelect({
+  locale,
+  onLocaleChange,
+}: {
+  locale: AppLocale
+  onLocaleChange: (locale: AppLocale) => void
+}) {
+  return (
+    <Card className="w-full md:w-72">
+      <CardContent>
+        <label className="flex flex-col gap-2 text-sm font-medium">
+          Locale
+          <NativeSelect
+            className="w-full"
+            value={locale}
+            onChange={(event) => {
+              const nextLocale = event.currentTarget.value
+
+              if (isAppLocale(nextLocale)) {
+                onLocaleChange(nextLocale)
+              }
+            }}
+          >
+            {appLocales.map((appLocale) => (
+              <NativeSelectOption key={appLocale} value={appLocale}>
+                {appLocaleLabels[appLocale]}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        </label>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -750,7 +820,13 @@ function RecurrenceEndFields({ control }: { control: BillFormControl }) {
   )
 }
 
-function LineItemsSection({ control }: { control: BillFormControl }) {
+function LineItemsSection({
+  control,
+  locale,
+}: {
+  control: BillFormControl
+  locale: AppLocale
+}) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'lineItems',
@@ -783,6 +859,7 @@ function LineItemsSection({ control }: { control: BillFormControl }) {
                   control={control}
                   currency={currency}
                   label="Unit price"
+                  locale={locale}
                   min={0}
                   name={`lineItems.${index}.unitAmountCents`}
                   step="0.01"
@@ -854,7 +931,13 @@ function PaymentNotesSection({ control }: { control: BillFormControl }) {
   )
 }
 
-function SubmissionSection({ control }: { control: BillFormControl }) {
+function SubmissionSection({
+  control,
+  locale,
+}: {
+  control: BillFormControl
+  locale: AppLocale
+}) {
   const lineItems = useWatch({ control, name: 'lineItems' })
   const taxRate = useWatch({ control, name: 'taxRate' })
   const currency = useWatch({ control, name: 'currency' })
@@ -885,7 +968,7 @@ function SubmissionSection({ control }: { control: BillFormControl }) {
       total: subtotal + tax,
     }
   }, [lineItems, taxRate])
-  const money = new Intl.NumberFormat('en-US', {
+  const money = new Intl.NumberFormat(locale, {
     currency,
     style: 'currency',
   })
@@ -1168,6 +1251,10 @@ function getDateInputValue(date: Date) {
   localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset())
 
   return localDate.toISOString().slice(0, 10)
+}
+
+function isAppLocale(value: string): value is AppLocale {
+  return appLocales.includes(value as AppLocale)
 }
 
 function titleCase(value: string) {

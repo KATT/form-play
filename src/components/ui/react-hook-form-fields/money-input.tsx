@@ -33,6 +33,7 @@ interface ControlledMoneyInputProps<
     >,
     ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
   currency: string
+  locale: string
 }
 
 function ControlledMoneyInput<
@@ -43,11 +44,12 @@ function ControlledMoneyInput<
   currency,
   control,
   label,
+  locale,
   name,
   placeholder,
   ...props
 }: ControlledMoneyInputProps<TFieldValues, TName, TTransformedValues>) {
-  const currencySymbol = getCurrencySymbol(currency)
+  const currencySymbol = getCurrencySymbol(currency, locale)
   const inputId = useId()
 
   return (
@@ -146,8 +148,8 @@ function formatCurrencyAmountCents(value: number) {
   return (value / 100).toFixed(2)
 }
 
-function getCurrencySymbol(currency: string) {
-  const parts = new Intl.NumberFormat('en-US', {
+function getCurrencySymbol(currency: string, locale: string) {
+  const parts = new Intl.NumberFormat(locale, {
     currency,
     style: 'currency',
   }).formatToParts(0)
