@@ -218,25 +218,36 @@ function ControlledRadioCardGroup<
             value={field.value == null ? '' : String(field.value)}
             onValueChange={(value) => field.onChange(value)}
           >
-            {options.map((option) => (
-              <RadioGroupItem
-                className="h-auto w-full items-start justify-start rounded-xl p-4 text-left data-checked:bg-primary/5"
-                disabled={option.disabled}
-                key={option.value}
-                value={option.value}
-              >
-                <span className="ml-3 flex flex-col gap-1">
-                  <span className="text-base font-semibold">
-                    {option.title}
-                  </span>
-                  {option.description ? (
-                    <span className="text-sm text-muted-foreground">
-                      {option.description}
+            {options.map((option) => {
+              const optionId = `${String(name)}-${option.value}`
+
+              return (
+                <FieldLabel
+                  className={cn(
+                    'min-h-32 cursor-pointer items-start rounded-xl border p-4 transition-colors hover:bg-accent/50 has-data-checked:border-primary has-data-checked:bg-primary/5 has-data-checked:ring-1 has-data-checked:ring-ring',
+                    option.disabled && 'cursor-not-allowed opacity-50',
+                  )}
+                  htmlFor={optionId}
+                  key={option.value}
+                >
+                  <RadioGroupItem
+                    disabled={option.disabled}
+                    id={optionId}
+                    value={option.value}
+                  />
+                  <span className="flex flex-col gap-1">
+                    <span className="text-base font-semibold">
+                      {option.title}
                     </span>
-                  ) : null}
-                </span>
-              </RadioGroupItem>
-            ))}
+                    {option.description ? (
+                      <span className="text-sm text-muted-foreground">
+                        {option.description}
+                      </span>
+                    ) : null}
+                  </span>
+                </FieldLabel>
+              )
+            })}
           </RadioGroup>
         )}
       />
