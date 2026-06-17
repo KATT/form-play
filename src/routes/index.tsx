@@ -32,7 +32,10 @@ import {
 } from '@/components/ui/card'
 import { ConditionalTooltip } from '@/components/ui/conditional-tooltip'
 import { FormConditional } from '@/components/ui/react-hook-form-fields/form-conditional'
-import { ControlledCheckboxGroup } from '@/components/ui/react-hook-form-fields/checkbox-group'
+import {
+  ControlledCheckboxGroup,
+  ControlledCheckboxGroupItem,
+} from '@/components/ui/react-hook-form-fields/checkbox-group'
 import { ControlledCheckboxField } from '@/components/ui/react-hook-form-fields/checkbox-field'
 import {
   ControlledMoneyInput,
@@ -671,12 +674,14 @@ function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
           description="Choose which weekdays should generate an occurrence."
           label="Weekdays"
           name="recurrence.weekdays"
-          options={weekdays.map((weekday) => ({
-            label: titleCase(weekday),
-            value: weekday,
-          }))}
           optionsClassName="grid grid-cols-2 gap-3 sm:grid-cols-4"
-        />
+        >
+          {weekdays.map((weekday) => (
+            <ControlledCheckboxGroupItem key={weekday} value={weekday}>
+              {titleCase(weekday)}
+            </ControlledCheckboxGroupItem>
+          ))}
+        </ControlledCheckboxGroup>
       </FormConditional>
       <FormConditional
         control={control}

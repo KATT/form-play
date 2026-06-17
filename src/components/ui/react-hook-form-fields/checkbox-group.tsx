@@ -1,3 +1,4 @@
+import { createContext, useContext } from 'react'
 import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
 
 import { Checkbox } from '@/components/ui/checkbox'
@@ -10,40 +11,43 @@ import {
 } from '@/components/ui/field'
 import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
 
-interface CheckboxGroupOption<TValue extends string> {
-  label: React.ReactNode
-  value: TValue
+interface CheckboxGroupContextValue {
+  error: boolean
+  fieldRef: (instance: HTMLElement | null) => void
+  selectedValues: string[]
+  setSelectedValues: (values: string[]) => void
 }
+
+const CheckboxGroupContext = createContext<
+  CheckboxGroupContextValue | undefined
+>(undefined)
 
 interface ControlledCheckboxGroupProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TValue extends string,
   TTransformedValues extends FieldValues | undefined = FieldValues,
 > extends ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
-  className?: string
-  description?: React.ReactNode
-  options: readonly CheckboxGroupOption<TValue>[]
-  optionsClassName?: string
+  children: React.ReactNode
+  className: string | undefined
+  description: React.ReactNode | undefined
+  optionsClassName: string | undefined
 }
 
 function ControlledCheckboxGroup<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TValue extends string,
   TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
+  children,
   className,
   control,
   description,
   label,
   name,
-  options,
   optionsClassName,
 }: ControlledCheckboxGroupProps<
   TFieldValues,
   TName,
-  TValue,
   TTransformedValues
 >) {
   return (
@@ -52,36 +56,23 @@ function ControlledCheckboxGroup<
       name={name}
       render={({ field, fieldState }) => {
         const selectedValues = Array.isArray(field.value)
-          ? (field.value as TValue[])
+          ? (field.value as string[])
           : []
         const error = fieldState.error?.message
 
         return (
           <Field data-invalid={!!error} className={className}>
             <FieldLabel>{label}</FieldLabel>
-            <FieldGroup className={optionsClassName}>
-              {options.map((option) => (
-                <Field orientation="horizontal" key={option.value}>
-                  <FieldLabel className="items-center">
-                    <Checkbox
-                      checked={selectedValues.includes(option.value)}
-                      ref={field.ref}
-                      onCheckedChange={(checked) => {
-                        field.onChange(
-                          checked
-                            ? [...selectedValues, option.value]
-                            : selectedValues.filter(
-                                (selectedValue) =>
-                                  selectedValue !== option.value,
-                              ),
-                        )
-                      }}
-                    />
-                    {option.label}
-                  </FieldLabel>
-                </Field>
-              ))}
-            </FieldGroup>
+            <CheckboxGroupContext
+              value={{
+                error: !!error,
+                fieldRef: field.ref,
+                selectedValues,
+                setSelectedValues: field.onChange,
+              }}
+            >
+              <FieldGroup className={optionsClassName}>{children}</FieldGroup>
+            </CheckboxGroupContext>
             {description ? (
               <FieldDescription>{description}</FieldDescription>
             ) : null}
@@ -93,4 +84,51 @@ function ControlledCheckboxGroup<
   )
 }
 
-export { ControlledCheckboxGroup }
+interface ControlledCheckboxGroupItemProps {
+  children: React.ReactNode
+  value: string
+}
+
+function ControlledCheckboxGroupItem({
+  children,
+  value,
+}: ControlledCheckboxGroupItemProps) {
+  const { error, fieldRef, selectedValues, setSelectedValues } =
+    useCheckboxGroupContext()
+
+  return (
+    <Field orientation="horizontal">
+      <FieldLabel className="items-center">
+        <Checkbox
+          aria-invalid={error}
+          checked={selectedValues.includes(value)}
+          ref={fieldRef}
+          onCheckedChange={(checked) => {
+            setSelectedValues(
+              checked
+                ? [...selectedValues, value]
+                : selectedValues.filter(
+                    (selectedValue) => selectedValue !== value,
+                  ),
+            )
+          }}
+        />
+        {children}
+      </FieldLabel>
+    </Field>
+  )
+}
+
+function useCheckboxGroupContext() {
+  const context = useContext(CheckboxGroupContext)
+
+  if (!context) {
+    throw new Error(
+      'ControlledCheckboxGroupItem must be used inside ControlledCheckboxGroup.',
+    )
+  }
+
+  return context
+}
+
+export { ControlledCheckboxGroup, ControlledCheckboxGroupItem }
