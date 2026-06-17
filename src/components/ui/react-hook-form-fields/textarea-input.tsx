@@ -49,6 +49,7 @@ function ControlledTextareaInput<
               aria-invalid={!!error}
               id={textareaId}
               name={field.name}
+              ref={field.ref}
               value={field.value == null ? '' : String(field.value)}
               onBlur={field.onBlur}
               onChange={(event) => field.onChange(event.currentTarget.value)}

@@ -49,13 +49,18 @@ function ControlledRadioCardGroup<
         name={name}
         render={({ field, fieldState }) => {
           const error = fieldState.error?.message
+          const selectedValue = field.value == null ? '' : String(field.value)
+          const focusValue =
+            selectedValue ||
+            options.find((option) => !option.disabled)?.value ||
+            options[0]?.value
 
           return (
             <>
               <RadioGroup
                 aria-invalid={!!error}
                 className={cn('grid gap-4 md:grid-cols-2', className)}
-                value={field.value == null ? '' : String(field.value)}
+                value={selectedValue}
                 onValueChange={(value) => field.onChange(value)}
               >
                 {options.map((option) => {
@@ -89,6 +94,9 @@ function ControlledRadioCardGroup<
                           aria-invalid={!!error}
                           disabled={option.disabled}
                           id={optionId}
+                          ref={
+                            option.value === focusValue ? field.ref : undefined
+                          }
                           value={option.value}
                         />
                       </Field>

@@ -72,6 +72,7 @@ function ControlledMoneyInput<
                 inputMode="decimal"
                 name={field.name}
                 placeholder={placeholder ?? `0.00 ${currency}`}
+                ref={field.ref}
                 type="text"
                 value={field.value == null ? '' : String(field.value)}
                 onBlur={() => {

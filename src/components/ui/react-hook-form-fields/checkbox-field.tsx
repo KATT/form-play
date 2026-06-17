@@ -45,6 +45,7 @@ function ControlledCheckboxField<
                 {...props}
                 aria-invalid={!!error}
                 checked={!!field.value}
+                ref={field.ref}
                 onCheckedChange={field.onChange}
               />
               {label}
