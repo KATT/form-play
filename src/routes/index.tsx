@@ -12,7 +12,6 @@ import {
   useDeferredValue,
   useMemo,
 } from 'react'
-import { SendIcon } from 'lucide-react'
 import { type UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -1000,11 +999,7 @@ function SubmissionSection({
               Update Endpoint
             </NativeSelectOption>
           </ControlledSelectInput>
-          <SubmitButton
-            className="self-end"
-            icon={SendIcon}
-            size="lg"
-          >
+          <SubmitButton className="self-end" size="lg">
             Transform & Submit
           </SubmitButton>
         </div>
