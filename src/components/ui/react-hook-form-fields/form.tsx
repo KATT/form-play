@@ -14,7 +14,7 @@ import {
 
 type UseResolverForm<
   TInput extends FieldValues,
-  TOutput extends FieldValues,
+  TOutput,
 > = UseFormReturn<TInput, unknown, TOutput> & {
   /**
    * A unique ID for this form.
@@ -24,7 +24,7 @@ type UseResolverForm<
 
 interface UseResolverFormProps<
   TInput extends FieldValues,
-  TOutput extends FieldValues,
+  TOutput,
 > extends Omit<
     UseFormProps<TInput, unknown, TOutput>,
     'defaultValues' | 'resolver'
@@ -33,7 +33,7 @@ interface UseResolverFormProps<
   resolver: Resolver<TInput, unknown, TOutput>
 }
 
-function useResolverForm<TInput extends FieldValues, TOutput extends FieldValues>(
+function useResolverForm<TInput extends FieldValues, TOutput>(
   props: UseResolverFormProps<TInput, TOutput>,
 ) {
   const form = useForm<TInput, unknown, TOutput>(props) as UseResolverForm<
@@ -46,11 +46,11 @@ function useResolverForm<TInput extends FieldValues, TOutput extends FieldValues
   return form
 }
 
-type AnyResolverForm = UseResolverForm<FieldValues, FieldValues>
+type AnyResolverForm = UseResolverForm<FieldValues, unknown>
 
 interface ResolverFormProps<
   TInput extends FieldValues,
-  TOutput extends FieldValues,
+  TOutput,
 > extends Omit<ComponentProps<'form'>, 'id' | 'onSubmit'> {
   form: UseResolverForm<TInput, TOutput>
   handleSubmit: SubmitHandler<TOutput>
@@ -58,7 +58,7 @@ interface ResolverFormProps<
   onInputValidationError?: SubmitErrorHandler<TInput> | undefined
 }
 
-function ResolverForm<TInput extends FieldValues, TOutput extends FieldValues>(
+function ResolverForm<TInput extends FieldValues, TOutput>(
   props: ResolverFormProps<TInput, TOutput>,
 ) {
   const {
