@@ -32,32 +32,31 @@ import { cn } from '@/lib/utils'
 interface ControlledFieldBase<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 > {
-  control: unknown
+  control: Control<TFieldValues, unknown, TTransformedValues>
   label: string
   name: TName
-}
-
-function getControl<TFieldValues extends FieldValues>(control: unknown) {
-  return control as Control<TFieldValues>
 }
 
 interface ControlledTextInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >
   extends
     Omit<
       React.InputHTMLAttributes<HTMLInputElement>,
       'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName> {}
+    ControlledFieldBase<TFieldValues, TName, TTransformedValues> {}
 
 interface ControlledMoneyInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 > extends Omit<
-  ControlledTextInputProps<TFieldValues, TName>,
+  ControlledTextInputProps<TFieldValues, TName, TTransformedValues>,
   'inputMode' | 'type'
 > {
   currency?: string
@@ -66,6 +65,7 @@ interface ControlledMoneyInputProps<
 interface ControlledSelectInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >
   extends
     Omit<
@@ -78,26 +78,28 @@ interface ControlledSelectInputProps<
       | 'size'
       | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName> {
+    ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
   children: React.ReactNode
 }
 
 interface ControlledTextareaInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >
   extends
     Omit<
       React.TextareaHTMLAttributes<HTMLTextAreaElement>,
       'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName> {
+    ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
   className?: string
 }
 
 interface ControlledCheckboxFieldProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >
   extends
     Omit<
@@ -109,7 +111,7 @@ interface ControlledCheckboxFieldProps<
       | 'onBlur'
       | 'onCheckedChange'
     >,
-    ControlledFieldBase<TFieldValues, TName> {}
+    ControlledFieldBase<TFieldValues, TName, TTransformedValues> {}
 
 interface RadioCardOption {
   description?: React.ReactNode
@@ -121,7 +123,8 @@ interface RadioCardOption {
 interface ControlledRadioCardGroupProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-> extends ControlledFieldBase<TFieldValues, TName> {
+  TTransformedValues extends FieldValues | undefined = FieldValues,
+> extends ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
   className?: string
   options: readonly RadioCardOption[]
 }
@@ -129,9 +132,10 @@ interface ControlledRadioCardGroupProps<
 interface FormConditionalProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 > {
   children: React.ReactNode
-  control: unknown
+  control: Control<TFieldValues, unknown, TTransformedValues>
   name: TName
   render: (value: FieldPathValue<TFieldValues, TName>) => boolean
 }
@@ -139,19 +143,20 @@ interface FormConditionalProps<
 function ControlledTextInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   control,
   id,
   label,
   name,
   ...props
-}: ControlledTextInputProps<TFieldValues, TName>) {
+}: ControlledTextInputProps<TFieldValues, TName, TTransformedValues>) {
   const generatedId = useId()
   const inputId = id ?? generatedId
 
   return (
     <Controller
-      control={getControl<TFieldValues>(control)}
+      control={control}
       name={name}
       render={({ field, fieldState }) => {
         const error = fieldState.error?.message
@@ -179,6 +184,7 @@ function ControlledTextInput<
 function ControlledMoneyInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   currency = 'USD',
   control,
@@ -187,14 +193,14 @@ function ControlledMoneyInput<
   name,
   placeholder,
   ...props
-}: ControlledMoneyInputProps<TFieldValues, TName>) {
+}: ControlledMoneyInputProps<TFieldValues, TName, TTransformedValues>) {
   const currencySymbol = getCurrencySymbol(currency)
   const generatedId = useId()
   const inputId = id ?? generatedId
 
   return (
     <Controller
-      control={getControl<TFieldValues>(control)}
+      control={control}
       name={name}
       render={({ field, fieldState }) => {
         const error = fieldState.error?.message
@@ -235,15 +241,16 @@ function ControlledMoneyInput<
 function ControlledSelectInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   children,
   control,
   name,
   ...props
-}: ControlledSelectInputProps<TFieldValues, TName>) {
+}: ControlledSelectInputProps<TFieldValues, TName, TTransformedValues>) {
   return (
     <Controller
-      control={getControl<TFieldValues>(control)}
+      control={control}
       name={name}
       render={({ field, fieldState }) => (
         <SelectInput
@@ -264,14 +271,15 @@ function ControlledSelectInput<
 function ControlledTextareaInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   control,
   name,
   ...props
-}: ControlledTextareaInputProps<TFieldValues, TName>) {
+}: ControlledTextareaInputProps<TFieldValues, TName, TTransformedValues>) {
   return (
     <Controller
-      control={getControl<TFieldValues>(control)}
+      control={control}
       name={name}
       render={({ field, fieldState }) => (
         <TextareaInput
@@ -290,15 +298,16 @@ function ControlledTextareaInput<
 function ControlledCheckboxField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   control,
   label,
   name,
   ...props
-}: ControlledCheckboxFieldProps<TFieldValues, TName>) {
+}: ControlledCheckboxFieldProps<TFieldValues, TName, TTransformedValues>) {
   return (
     <Controller
-      control={getControl<TFieldValues>(control)}
+      control={control}
       name={name}
       render={({ field, fieldState }) => (
         <CheckboxField
@@ -316,18 +325,19 @@ function ControlledCheckboxField<
 function ControlledRadioCardGroup<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   className,
   control,
   label,
   name,
   options,
-}: ControlledRadioCardGroupProps<TFieldValues, TName>) {
+}: ControlledRadioCardGroupProps<TFieldValues, TName, TTransformedValues>) {
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
       <Controller
-        control={getControl<TFieldValues>(control)}
+        control={control}
         name={name}
         render={({ field, fieldState }) => {
           const error = fieldState.error?.message
@@ -384,14 +394,15 @@ function ControlledRadioCardGroup<
 function FormConditional<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
+  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   children,
   control,
   name,
   render,
-}: FormConditionalProps<TFieldValues, TName>) {
+}: FormConditionalProps<TFieldValues, TName, TTransformedValues>) {
   const value = useWatch({
-    control: getControl<TFieldValues>(control),
+    control,
     name,
   }) as FieldPathValue<TFieldValues, TName>
 
