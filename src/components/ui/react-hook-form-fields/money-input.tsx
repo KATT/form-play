@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useId, useMemo } from 'react'
 import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -49,7 +49,14 @@ function ControlledMoneyInput<
   placeholder,
   ...props
 }: ControlledMoneyInputProps<TFieldValues, TName, TTransformedValues>) {
-  const currencySymbol = getCurrencySymbol(currency, locale)
+  const currencySymbol = useMemo(() => {
+    const parts = new Intl.NumberFormat(locale, {
+      currency,
+      style: 'currency',
+    }).formatToParts(0)
+
+    return parts.find((part) => part.type === 'currency')?.value ?? currency
+  }, [currency, locale])
   const inputId = useId()
 
   return (
@@ -88,9 +95,6 @@ function ControlledMoneyInput<
                 }}
                 onChange={(event) => field.onChange(event.currentTarget.value)}
               />
-              <InputGroupAddon align="inline-end">
-                <InputGroupText>{currency}</InputGroupText>
-              </InputGroupAddon>
             </InputGroup>
             <FieldError>{error}</FieldError>
           </Field>
@@ -146,15 +150,6 @@ function formatCurrencyAmountInput(value: unknown) {
 
 function formatCurrencyAmountCents(value: number) {
   return (value / 100).toFixed(2)
-}
-
-function getCurrencySymbol(currency: string, locale: string) {
-  const parts = new Intl.NumberFormat(locale, {
-    currency,
-    style: 'currency',
-  }).formatToParts(0)
-
-  return parts.find((part) => part.type === 'currency')?.value ?? currency
 }
 
 export {
