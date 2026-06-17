@@ -213,14 +213,14 @@ function SubmitButton(
         return {
           rotate: [0, -1.5, 1.5, 0],
           scale: [1, 1.02, 1],
-          x: 0,
+          x: [0, -5, 5, -3, 3, 0],
           y: [0, -2, 0],
         }
       case 'server-error':
         return {
-          rotate: [0, -1, 1, -1, 1, 0],
+          rotate: [0, -2, 2, -1.5, 1.5, 0],
           scale: [1, 0.98, 1],
-          x: [0, -6, 6, -4, 4, 0],
+          x: [0, -14, 14, -10, 10, -6, 6, 0],
           y: 0,
         }
       default:
@@ -338,7 +338,15 @@ function SubmitButton(
       render={
         <motion.button
           animate={submitButtonMotion}
-          transition={{ duration: 0.35 }}
+          key={`${submitButtonState}-${submitCount}`}
+          transition={{
+            duration:
+              submitButtonState === 'input-error' ||
+              submitButtonState === 'server-error'
+                ? 0.5
+                : 0.25,
+            ease: 'easeInOut',
+          }}
           whileHover={isSubmitting ? undefined : { y: -1 }}
           whileTap={isSubmitting ? undefined : { scale: 0.98 }}
         />
