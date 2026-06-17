@@ -54,8 +54,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   sampleApiBill,
   type ApiBill,
-  type ApiBillPayload,
-  type ApiBillPayloadBase,
   type ApiSubmission,
   type ApiWeekday,
 } from './-bill-api'
@@ -335,8 +333,11 @@ function UpsertBillForm({
       <section>
         <form
           className="flex flex-col gap-6"
-          onSubmit={form.handleSubmit((values) => {
-            console.info('Submitting bill', toApiSubmission(values))
+          onSubmit={form.handleSubmit(() => {
+            console.info(
+              'Submitting bill',
+              toApiSubmission.parse(form.getValues()),
+            )
           })}
         >
           <BillDetailsSection form={form} />
@@ -754,9 +755,9 @@ function SubmissionSection({ form }: { form: BillForm }) {
 
 function SubmissionPreviewCard({ form }: { form: BillForm }) {
   const watchedValues = useWatch({ control: form.control })
-  const parsedWatchedValues = billFormSchema.safeParse(watchedValues)
-  const submissionPreview = parsedWatchedValues.success
-    ? toApiSubmission(parsedWatchedValues.data)
+  const parsedSubmission = toApiSubmission.safeParse(watchedValues)
+  const submissionPreview = parsedSubmission.success
+    ? parsedSubmission.data
     : 'Complete the required fields to inspect the API submission.'
 
   return (
@@ -1015,10 +1016,64 @@ function getDefaultRecurrence(): NonNullable<
   }
 }
 
-export const toApiPayload = billFormSchema.transform(getApiPayload)
+const toApiSubmission = billFormSchema.transform((values): ApiSubmission => {
+  const schedule =
+    values.billType === 'repeating'
+      ? (() => {
+          const recurrence = values.recurrence
+          const end = {
+            ends_on:
+              recurrence.endStrategy === 'on_date'
+                ? (recurrence.endsOn ?? null)
+                : null,
+            max_occurrences:
+              recurrence.endStrategy === 'after_occurrences'
+                ? (recurrence.occurrenceCount ?? null)
+                : null,
+          }
 
-function getApiPayload(values: BillFormValues): ApiBillPayload {
-  const basePayload: ApiBillPayloadBase = {
+          switch (recurrence.frequency) {
+            case 'daily':
+            case 'weekly':
+              return {
+                ...end,
+                frequency: recurrence.frequency,
+                interval: recurrence.interval,
+                starts_on: recurrence.startsOn,
+                weekdays: recurrence.weekdays,
+              }
+            case 'monthly': {
+              const anchorDate = recurrence.monthlyAnchorDate
+
+              return {
+                ...end,
+                frequency: 'monthly' as const,
+                interval: recurrence.interval,
+                starts_on: recurrence.startsOn,
+                anchor_date: anchorDate,
+                day_of_month: getDateDay(anchorDate),
+                day_overflow: 'last_day' as const,
+              }
+            }
+            case 'yearly': {
+              const anchorDate = recurrence.yearlyAnchorDate
+
+              return {
+                ...end,
+                frequency: 'yearly' as const,
+                interval: recurrence.interval,
+                starts_on: recurrence.startsOn,
+                anchor_date: anchorDate,
+                month: getDateMonth(anchorDate),
+                day: getDateDay(anchorDate),
+                day_overflow: 'last_day' as const,
+              }
+            }
+          }
+        })()
+      : null
+
+  const sharedPayload = {
     kind: values.billType,
     customer: {
       name: values.customerName,
@@ -1031,113 +1086,43 @@ function getApiPayload(values: BillFormValues): ApiBillPayload {
     tax_rate_bps: Math.round(values.taxRate * 100),
     auto_collect: values.collectPaymentAutomatically,
     memo: values.memo || null,
-    schedule:
-      values.billType === 'repeating'
-        ? getApiSchedule(values.recurrence)
-        : null,
+    schedule,
   }
 
   if (values.submitIntent === 'create') {
     return {
-      ...basePayload,
+      endpoint: '/api/bills',
+      method: 'POST',
+      body: {
+        ...sharedPayload,
+        line_items: values.lineItems.map((item) => ({
+          description: item.description,
+          quantity: item.quantity,
+          unit_amount_cents: item.unitAmountCents,
+          taxable: item.taxable,
+        })),
+      },
+    }
+  }
+
+  const billId = values.billId ?? ':billId'
+
+  return {
+    endpoint: `/api/bills/${billId}`,
+    method: 'PATCH',
+    body: {
+      id: billId,
+      ...sharedPayload,
       line_items: values.lineItems.map((item) => ({
+        id: item.id,
         description: item.description,
         quantity: item.quantity,
         unit_amount_cents: item.unitAmountCents,
         taxable: item.taxable,
       })),
-    }
+    },
   }
-
-  return {
-    id: values.billId ?? ':billId',
-    ...basePayload,
-    line_items: values.lineItems.map((item) => ({
-      id: item.id,
-      description: item.description,
-      quantity: item.quantity,
-      unit_amount_cents: item.unitAmountCents,
-      taxable: item.taxable,
-    })),
-  }
-}
-
-function toApiSubmission(values: BillFormValues): ApiSubmission {
-  const billId = values.billId ?? ':billId'
-  const body = getApiPayload(values)
-
-  if (values.submitIntent === 'create') {
-    if ('id' in body) {
-      throw new Error('Create bill payload should not include a bill id')
-    }
-
-    return {
-      endpoint: '/api/bills',
-      method: 'POST',
-      body,
-    }
-  }
-
-  if (!('id' in body)) {
-    throw new Error('Update bill payload must include a bill id')
-  }
-
-  return {
-    endpoint: `/api/bills/${billId}`,
-    method: 'PATCH',
-    body,
-  }
-}
-
-function getApiSchedule(recurrence: NonNullable<BillFormValues['recurrence']>) {
-  const end = {
-    ends_on:
-      recurrence.endStrategy === 'on_date' ? (recurrence.endsOn ?? null) : null,
-    max_occurrences:
-      recurrence.endStrategy === 'after_occurrences'
-        ? (recurrence.occurrenceCount ?? null)
-        : null,
-  }
-
-  switch (recurrence.frequency) {
-    case 'daily':
-    case 'weekly':
-      return {
-        ...end,
-        frequency: recurrence.frequency,
-        interval: recurrence.interval,
-        starts_on: recurrence.startsOn,
-        weekdays: recurrence.weekdays,
-      }
-    case 'monthly': {
-      const anchorDate = recurrence.monthlyAnchorDate
-
-      return {
-        ...end,
-        frequency: 'monthly' as const,
-        interval: recurrence.interval,
-        starts_on: recurrence.startsOn,
-        anchor_date: anchorDate,
-        day_of_month: getDateDay(anchorDate),
-        day_overflow: 'last_day' as const,
-      }
-    }
-    case 'yearly': {
-      const anchorDate = recurrence.yearlyAnchorDate
-
-      return {
-        ...end,
-        frequency: 'yearly' as const,
-        interval: recurrence.interval,
-        starts_on: recurrence.startsOn,
-        anchor_date: anchorDate,
-        month: getDateMonth(anchorDate),
-        day: getDateDay(anchorDate),
-        day_overflow: 'last_day' as const,
-      }
-    }
-  }
-}
+})
 
 function getDateMonth(value: string) {
   return Number(value.slice(5, 7))
