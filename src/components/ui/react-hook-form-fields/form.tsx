@@ -1,6 +1,11 @@
 import { type ComponentProps, useEffect, useRef, useState, useId } from 'react'
 import { AnimatePresence, motion, useAnimationControls } from 'motion/react'
-import { CheckIcon, type LucideIcon, XIcon } from 'lucide-react'
+import {
+  CheckIcon,
+  type LucideIcon,
+  TriangleAlertIcon,
+  XIcon,
+} from 'lucide-react'
 import {
   type DefaultValues,
   type FieldValues,
@@ -18,7 +23,12 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 
-type SubmitButtonState = 'error' | 'idle' | 'submitting' | 'success'
+type SubmitButtonState =
+  | 'idle'
+  | 'input-error'
+  | 'server-error'
+  | 'submitting'
+  | 'success'
 type SubmitButtonFeedbackState = Exclude<SubmitButtonState, 'submitting'>
 type SubmitButtonIconPosition = 'end' | 'start'
 
@@ -145,6 +155,7 @@ function SubmitButton(
   const submitCount = formState?.submitCount ?? 0
   const isSubmitSuccessful = formState?.isSubmitSuccessful ?? false
   const errorCount = formState ? Object.keys(formState.errors).length : 0
+  const hasServerError = !!formState?.errors.root?.server
   const submitButtonState = ((): SubmitButtonState => {
     if (isSubmitting) {
       return 'submitting'
@@ -175,19 +186,30 @@ function SubmitButton(
     lastSettledSubmitCount.current = submitCount
 
     if (errorCount > 0) {
-      setFeedbackState('error')
-      void buttonAnimationControls.start({
-        rotate: [0, -1, 1, -1, 1, 0],
-        scale: [1, 0.98, 1],
-        x: [0, -6, 6, -4, 4, 0],
-        transition: { duration: 0.35 },
-      })
+      if (hasServerError) {
+        setFeedbackState('server-error')
+        void buttonAnimationControls.start({
+          rotate: [0, -1, 1, -1, 1, 0],
+          scale: [1, 0.98, 1],
+          x: [0, -6, 6, -4, 4, 0],
+          transition: { duration: 0.35 },
+        })
+      } else {
+        setFeedbackState('input-error')
+        void buttonAnimationControls.start({
+          rotate: [0, -1.5, 1.5, 0],
+          scale: [1, 1.02, 1],
+          y: [0, -2, 0],
+          transition: { duration: 0.3 },
+        })
+      }
     } else {
       setFeedbackState('success')
       void buttonAnimationControls.start({
         rotate: 0,
         scale: 1,
         x: 0,
+        y: 0,
         transition: { duration: 0.2 },
       })
     }
@@ -198,6 +220,7 @@ function SubmitButton(
         rotate: 0,
         scale: 1,
         x: 0,
+        y: 0,
         transition: { duration: 0.2 },
       })
     }, 1800)
@@ -208,6 +231,7 @@ function SubmitButton(
   }, [
     buttonAnimationControls,
     errorCount,
+    hasServerError,
     isSubmitSuccessful,
     isSubmitting,
     submitCount,
@@ -220,7 +244,9 @@ function SubmitButton(
         return undefined
       case 'success':
         return 'bg-emerald-600 text-white hover:bg-emerald-600'
-      case 'error':
+      case 'input-error':
+        return 'bg-amber-500 text-white hover:bg-amber-500'
+      case 'server-error':
         return 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
       default:
         submitButtonState satisfies never
@@ -278,10 +304,22 @@ function SubmitButton(
                   <CheckIcon aria-hidden="true" />
                 </motion.span>
               )
-            case 'error':
+            case 'input-error':
               return (
                 <motion.span
-                  key="error"
+                  key="input-error"
+                  initial={{ opacity: 0, scale: 0.75, rotate: -12 }}
+                  animate={{ opacity: 1, scale: [1, 1.12, 1], rotate: 0 }}
+                  exit={{ opacity: 0, scale: 0.75, rotate: 12 }}
+                  transition={{ duration: 0.35 }}
+                >
+                  <TriangleAlertIcon aria-hidden="true" />
+                </motion.span>
+              )
+            case 'server-error':
+              return (
+                <motion.span
+                  key="server-error"
                   initial={{ opacity: 0, scale: 0.75 }}
                   animate={{ opacity: 1, scale: [1, 1.18, 1] }}
                   exit={{ opacity: 0, scale: 0.75 }}
