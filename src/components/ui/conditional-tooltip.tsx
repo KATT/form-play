@@ -5,7 +5,7 @@ import {
 } from '@/components/ui/tooltip'
 
 interface ConditionalTooltipProps {
-  children: React.ReactElement
+  children: React.ReactNode
   disabledReason: React.ReactNode | undefined
 }
 
@@ -19,7 +19,18 @@ function ConditionalTooltip({
 
   return (
     <Tooltip>
-      <TooltipTrigger render={children} />
+      <TooltipTrigger
+        render={
+          <span
+            aria-label={
+              typeof disabledReason === 'string' ? disabledReason : undefined
+            }
+            className="block"
+          />
+        }
+      >
+        {children}
+      </TooltipTrigger>
       <TooltipContent>{disabledReason}</TooltipContent>
     </Tooltip>
   )
