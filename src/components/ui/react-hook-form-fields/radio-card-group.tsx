@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
 
 import {
@@ -41,6 +42,8 @@ function ControlledRadioCardGroup<
   name,
   options,
 }: ControlledRadioCardGroupProps<TFieldValues, TName, TTransformedValues>) {
+  const radioGroupId = useId()
+
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
@@ -64,7 +67,7 @@ function ControlledRadioCardGroup<
                 onValueChange={(value) => field.onChange(value)}
               >
                 {options.map((option) => {
-                  const optionId = `${String(name)}-${option.value}`
+                  const optionId = `${radioGroupId}-${option.value}`
 
                   return (
                     <ConditionalTooltip

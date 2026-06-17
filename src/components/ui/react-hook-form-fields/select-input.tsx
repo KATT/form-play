@@ -15,6 +15,7 @@ interface ControlledSelectInputProps<
       React.SelectHTMLAttributes<HTMLSelectElement>,
       | 'defaultValue'
       | 'form'
+      | 'id'
       | 'name'
       | 'onBlur'
       | 'onChange'
@@ -32,13 +33,11 @@ function ControlledSelectInput<
 >({
   children,
   control,
-  id,
   label,
   name,
   ...props
 }: ControlledSelectInputProps<TFieldValues, TName, TTransformedValues>) {
-  const generatedId = useId()
-  const selectId = id ?? generatedId
+  const selectId = useId()
 
   return (
     <Controller

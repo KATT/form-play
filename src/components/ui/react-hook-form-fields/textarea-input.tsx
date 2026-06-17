@@ -13,7 +13,7 @@ interface ControlledTextareaInputProps<
   extends
     Omit<
       React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-      'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
+      'defaultValue' | 'form' | 'id' | 'name' | 'onBlur' | 'onChange' | 'value'
     >,
     ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
   className?: string
@@ -26,13 +26,11 @@ function ControlledTextareaInput<
 >({
   className,
   control,
-  id,
   label,
   name,
   ...props
 }: ControlledTextareaInputProps<TFieldValues, TName, TTransformedValues>) {
-  const generatedId = useId()
-  const textareaId = id ?? generatedId
+  const textareaId = useId()
 
   return (
     <Controller

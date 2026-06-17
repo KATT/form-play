@@ -13,7 +13,7 @@ interface ControlledTextInputProps<
   extends
     Omit<
       React.InputHTMLAttributes<HTMLInputElement>,
-      'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
+      'defaultValue' | 'form' | 'id' | 'name' | 'onBlur' | 'onChange' | 'value'
     >,
     ControlledFieldBase<TFieldValues, TName, TTransformedValues> {}
 
@@ -23,13 +23,11 @@ function ControlledTextInput<
   TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   control,
-  id,
   label,
   name,
   ...props
 }: ControlledTextInputProps<TFieldValues, TName, TTransformedValues>) {
-  const generatedId = useId()
-  const inputId = id ?? generatedId
+  const inputId = useId()
 
   return (
     <Controller

@@ -23,6 +23,7 @@ interface ControlledMoneyInputProps<
       React.InputHTMLAttributes<HTMLInputElement>,
       | 'defaultValue'
       | 'form'
+      | 'id'
       | 'inputMode'
       | 'name'
       | 'onBlur'
@@ -41,15 +42,13 @@ function ControlledMoneyInput<
 >({
   currency,
   control,
-  id,
   label,
   name,
   placeholder,
   ...props
 }: ControlledMoneyInputProps<TFieldValues, TName, TTransformedValues>) {
   const currencySymbol = getCurrencySymbol(currency)
-  const generatedId = useId()
-  const inputId = id ?? generatedId
+  const inputId = useId()
 
   return (
     <Controller
