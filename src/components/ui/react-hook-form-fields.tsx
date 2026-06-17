@@ -17,6 +17,12 @@ import {
   FieldTitle,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from '@/components/ui/input-group'
 import { NativeSelect } from '@/components/ui/native-select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
@@ -145,13 +151,13 @@ function ControlledMoneyInput<
       control={form.control}
       name={name}
       render={({ field }) => (
-        <TextInput
+        <MoneyInput
           {...props}
+          currency={currency}
+          currencySymbol={currencySymbol}
           error={error}
-          inputMode="decimal"
           name={field.name}
           placeholder={placeholder ?? `0.00 ${currency}`}
-          type="text"
           value={formatCentsAsMajorUnit(field.value)}
           onBlur={(event) => {
             field.onBlur()
@@ -160,8 +166,6 @@ function ControlledMoneyInput<
           onChange={(event) => {
             field.onChange(parseMajorUnitToCents(event.currentTarget.value))
           }}
-          prefix={currencySymbol}
-          suffix={currency}
         />
       )}
     />
@@ -342,14 +346,10 @@ function TextInput({
   error,
   id,
   label,
-  prefix,
-  suffix,
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & {
   error?: string
   label: string
-  prefix?: React.ReactNode
-  suffix?: React.ReactNode
 }) {
   const generatedId = useId()
   const inputId = id ?? generatedId
@@ -357,24 +357,46 @@ function TextInput({
   return (
     <Field data-invalid={!!error}>
       <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
-      <div className="relative">
-        {prefix ? (
-          <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-sm text-muted-foreground">
-            {prefix}
-          </span>
-        ) : null}
-        <Input
+      <Input aria-invalid={!!error} id={inputId} {...props} />
+      <FieldError>{error}</FieldError>
+    </Field>
+  )
+}
+
+function MoneyInput({
+  currency,
+  currencySymbol,
+  error,
+  id,
+  label,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  currency: string
+  currencySymbol: string
+  error?: string
+  label: string
+}) {
+  const generatedId = useId()
+  const inputId = id ?? generatedId
+
+  return (
+    <Field data-invalid={!!error}>
+      <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
+      <InputGroup>
+        <InputGroupAddon align="inline-start">
+          <InputGroupText>{currencySymbol}</InputGroupText>
+        </InputGroupAddon>
+        <InputGroupInput
           aria-invalid={!!error}
-          className={cn(prefix && 'pl-7', suffix && 'pr-12')}
           id={inputId}
+          inputMode="decimal"
+          type="text"
           {...props}
         />
-        {suffix ? (
-          <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-xs font-medium text-muted-foreground">
-            {suffix}
-          </span>
-        ) : null}
-      </div>
+        <InputGroupAddon align="inline-end">
+          <InputGroupText>{currency}</InputGroupText>
+        </InputGroupAddon>
+      </InputGroup>
       <FieldError>{error}</FieldError>
     </Field>
   )
