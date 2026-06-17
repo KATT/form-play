@@ -259,6 +259,7 @@ function Home() {
             const nextSections = sections.filter(isAccordionSection)
 
             navigate({
+              resetScroll: false,
               search: (previous) => ({
                 ...previous,
                 sections: nextSections,
