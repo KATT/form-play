@@ -1,4 +1,4 @@
-import { type ComponentProps, useId } from 'react'
+import { type ComponentProps, type ReactNode, useId } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CheckIcon } from 'lucide-react'
 import {
@@ -108,6 +108,10 @@ function SubmitButton(
      * Optionally specify a form to submit instead of the closest form context.
      */
     form?: AnyResolverForm | undefined
+    /**
+     * The default icon shown before the label when the button is idle.
+     */
+    icon: ReactNode
   },
 ) {
   const {
@@ -115,6 +119,7 @@ function SubmitButton(
     className,
     disabled,
     form: explicitForm,
+    icon,
     ...passThrough
   } = props
   const context = useFormContext()
@@ -190,7 +195,17 @@ function SubmitButton(
               >
                 <CheckIcon aria-hidden="true" className="text-emerald-500" />
               </motion.span>
-            ) : null}
+            ) : (
+              <motion.span
+                key="idle"
+                initial={{ opacity: 0, scale: 0.8, y: -2 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: 2 }}
+                transition={{ duration: 0.15 }}
+              >
+                {icon}
+              </motion.span>
+            )}
           </AnimatePresence>
         </span>
         {children}
