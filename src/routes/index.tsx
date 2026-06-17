@@ -714,13 +714,12 @@ function RepeatingScheduleFields({ control }: { control: BillFormControl }) {
 }
 
 function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
-  return (
-    <>
-      <FormConditional
-        control={control}
-        name="recurrence.frequency"
-        render={(frequency) => frequency === 'daily' || frequency === 'weekly'}
-      >
+  const frequency = useWatch({ control, name: 'recurrence.frequency' })
+
+  switch (frequency) {
+    case 'daily':
+    case 'weekly':
+      return (
         <ControlledCheckboxGroup
           className="md:col-span-2"
           control={control}
@@ -735,41 +734,43 @@ function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
             </ControlledCheckboxGroupItem>
           ))}
         </ControlledCheckboxGroup>
-      </FormConditional>
-      <FormConditional
-        control={control}
-        name="recurrence.frequency"
-        render={(frequency) => frequency === 'monthly'}
-      >
-        <ControlledTextInput
-          control={control}
-          label="Monthly anchor date"
-          name="recurrence.monthlyAnchorDate"
-          type="date"
-        />
-        <FieldDescription>
-          If a month does not have that day, the bill runs on the last valid day
-          of that month.
-        </FieldDescription>
-      </FormConditional>
-      <FormConditional
-        control={control}
-        name="recurrence.frequency"
-        render={(frequency) => frequency === 'yearly'}
-      >
-        <ControlledTextInput
-          control={control}
-          label="Yearly anchor date"
-          name="recurrence.yearlyAnchorDate"
-          type="date"
-        />
-        <FieldDescription>
-          If a future year does not have that date, the bill runs on the last
-          valid day of that month.
-        </FieldDescription>
-      </FormConditional>
-    </>
-  )
+      )
+    case 'monthly':
+      return (
+        <>
+          <ControlledTextInput
+            control={control}
+            label="Monthly anchor date"
+            name="recurrence.monthlyAnchorDate"
+            type="date"
+          />
+          <FieldDescription>
+            If a month does not have that day, the bill runs on the last valid
+            day of that month.
+          </FieldDescription>
+        </>
+      )
+    case 'yearly':
+      return (
+        <>
+          <ControlledTextInput
+            control={control}
+            label="Yearly anchor date"
+            name="recurrence.yearlyAnchorDate"
+            type="date"
+          />
+          <FieldDescription>
+            If a future year does not have that date, the bill runs on the last
+            valid day of that month.
+          </FieldDescription>
+        </>
+      )
+    case undefined:
+      return null
+    default:
+      frequency satisfies never
+      return null
+  }
 }
 function RecurrenceEndFields({ control }: { control: BillFormControl }) {
   return (
