@@ -14,7 +14,6 @@ import { cn } from '@/lib/utils'
 interface RadioCardGroupContextValue {
   error: boolean
   fieldRef: (instance: HTMLElement | null) => void
-  groupId: string
   selectedValue: string
 }
 
@@ -42,8 +41,6 @@ function ControlledRadioCardGroup<
   label,
   name,
 }: ControlledRadioCardGroupProps<TFieldValues, TName, TTransformedValues>) {
-  const radioGroupId = useId()
-
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
@@ -60,7 +57,6 @@ function ControlledRadioCardGroup<
                 value={{
                   error: !!error,
                   fieldRef: field.ref,
-                  groupId: radioGroupId,
                   selectedValue,
                 }}
               >
@@ -97,9 +93,8 @@ function ControlledRadioCardGroupItem({
   disabledReason,
   value,
 }: ControlledRadioCardGroupItemProps) {
-  const { error, fieldRef, groupId, selectedValue } =
-    useRadioCardGroupContext()
-  const optionId = `${groupId}-${value}`
+  const { error, fieldRef, selectedValue } = useRadioCardGroupContext()
+  const optionId = useId()
 
   return (
     <ConditionalTooltip disabledReason={disabledReason}>
