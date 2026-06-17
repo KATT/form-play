@@ -152,13 +152,13 @@ function ControlledMoneyInput<
           name={field.name}
           placeholder={placeholder ?? `0.00 ${currency}`}
           type="text"
-          value={formatMoneyInputValue(field.value)}
+          value={formatCentsAsMajorUnit(field.value)}
           onBlur={(event) => {
             field.onBlur()
-            field.onChange(formatMoneyInputValue(event.currentTarget.value))
+            field.onChange(parseMajorUnitToCents(event.currentTarget.value))
           }}
           onChange={(event) => {
-            field.onChange(normalizeMoneyInputValue(event.currentTarget.value))
+            field.onChange(parseMajorUnitToCents(event.currentTarget.value))
           }}
           prefix={currencySymbol}
           suffix={currency}
@@ -458,24 +458,28 @@ function CheckboxField({
   )
 }
 
-function normalizeMoneyInputValue(value: unknown) {
-  return String(value ?? '').replace(/[^\d.]/g, '')
-}
-
-function formatMoneyInputValue(value: unknown) {
-  const normalizedValue = normalizeMoneyInputValue(value)
-
-  if (normalizedValue === '') {
+function formatCentsAsMajorUnit(value: unknown) {
+  if (value == null || value === '') {
     return ''
   }
 
-  const parsedValue = Number(normalizedValue)
+  const cents = Number(value)
 
-  if (!Number.isFinite(parsedValue)) {
-    return normalizedValue
+  if (!Number.isFinite(cents)) {
+    return ''
   }
 
-  return parsedValue.toFixed(2)
+  return (cents / 100).toFixed(2)
+}
+
+function parseMajorUnitToCents(value: unknown) {
+  const [major = '0', minor = ''] = String(value ?? '')
+    .replace(/[^\d.]/g, '')
+    .split('.')
+  const normalizedMajor = major === '' ? '0' : major
+  const normalizedMinor = minor.padEnd(2, '0').slice(0, 2)
+
+  return Number(normalizedMajor) * 100 + Number(normalizedMinor)
 }
 
 function getCurrencySymbol(currency: string) {

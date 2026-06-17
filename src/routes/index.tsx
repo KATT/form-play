@@ -116,7 +116,10 @@ const lineItemSchema = z.object({
   id: z.string().optional(),
   description: z.string().min(1, 'Add a description'),
   quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
-  unitPrice: z.coerce.number().min(0, 'Unit price cannot be negative'),
+  unitAmountCents: z.coerce
+    .number()
+    .int('Unit price must resolve to whole cents')
+    .min(0, 'Unit price cannot be negative'),
   taxable: z.boolean(),
 })
 
@@ -573,7 +576,7 @@ function LineItemsSection({ form }: { form: BillForm }) {
                   form={form}
                   label="Unit price"
                   min={0}
-                  name={`lineItems.${index}.unitPrice`}
+                  name={`lineItems.${index}.unitAmountCents`}
                   step="0.01"
                 />
                 <div className="flex items-end gap-3">
@@ -875,7 +878,7 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormValues {
       id: item.id,
       description: item.description,
       quantity: item.quantity,
-      unitPrice: centsToDollars(item.unit_amount_cents),
+      unitAmountCents: item.unit_amount_cents,
       taxable: item.taxable,
     })),
     taxRate: apiBill.tax_rate_bps / 100,
@@ -942,7 +945,7 @@ function getDefaultLineItem(): BillFormValues['lineItems'][number] {
   return {
     description: '',
     quantity: 1,
-    unitPrice: 0,
+    unitAmountCents: 0,
     taxable: true,
   }
 }
@@ -985,7 +988,7 @@ const toApiPayload = billFormSchema.transform((values): ApiBillPayload => {
       line_items: values.lineItems.map((item) => ({
         description: item.description,
         quantity: item.quantity,
-        unit_amount_cents: dollarsToCents(item.unitPrice),
+        unit_amount_cents: item.unitAmountCents,
         taxable: item.taxable,
       })),
     }
@@ -998,7 +1001,7 @@ const toApiPayload = billFormSchema.transform((values): ApiBillPayload => {
       id: item.id,
       description: item.description,
       quantity: item.quantity,
-      unit_amount_cents: dollarsToCents(item.unitPrice),
+      unit_amount_cents: item.unitAmountCents,
       taxable: item.taxable,
     })),
   }
@@ -1084,20 +1087,24 @@ function getApiSchedule(recurrence: NonNullable<BillFormValues['recurrence']>) {
 function calculateTotals(
   lineItems: Array<{
     quantity: unknown
-    unitPrice: unknown
+    unitAmountCents: unknown
     taxable: boolean
   }>,
   taxRate: unknown,
 ) {
   const subtotal = lineItems.reduce(
     (total, item) =>
-      total + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0),
+      total +
+      ((Number(item.quantity) || 0) * (Number(item.unitAmountCents) || 0)) /
+        100,
     0,
   )
   const taxableSubtotal = lineItems.reduce(
     (total, item) =>
       item.taxable
-        ? total + (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+        ? total +
+          ((Number(item.quantity) || 0) * (Number(item.unitAmountCents) || 0)) /
+            100
         : total,
     0,
   )
@@ -1108,14 +1115,6 @@ function calculateTotals(
     tax,
     total: subtotal + tax,
   }
-}
-
-function dollarsToCents(value: number) {
-  return Math.round(value * 100)
-}
-
-function centsToDollars(value: number) {
-  return value / 100
 }
 
 function getDateMonth(value: string) {

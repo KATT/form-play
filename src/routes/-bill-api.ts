@@ -1,6 +1,7 @@
 export type ApiBillKind = 'one_off' | 'repeating'
 export type ApiBillStatus = 'draft' | 'scheduled' | 'sent' | 'paid'
 export type ApiCurrency = 'USD' | 'EUR' | 'GBP'
+export type ApiMoneyCents = number
 export type ApiRecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
 export type ApiWeekday =
   | 'monday'
@@ -65,7 +66,7 @@ export type ApiBill = {
     id: string
     description: string
     quantity: number
-    unit_amount_cents: number
+    unit_amount_cents: ApiMoneyCents
     taxable: boolean
   }>
   tax_rate_bps: number
@@ -94,7 +95,7 @@ export type ApiCreateBillPayload = ApiBillPayloadBase & {
   line_items: Array<{
     description: string
     quantity: number
-    unit_amount_cents: number
+    unit_amount_cents: ApiMoneyCents
     taxable: boolean
   }>
 }
@@ -106,7 +107,7 @@ export type ApiUpdateBillPayload = {
       id?: string
       description: string
       quantity: number
-      unit_amount_cents: number
+      unit_amount_cents: ApiMoneyCents
       taxable: boolean
     }>
   }
