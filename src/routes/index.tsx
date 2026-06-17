@@ -364,18 +364,36 @@ function Home() {
               fresh defaults or defaults mapped from an imaginary API bill.
             </p>
           </div>
-          <LocaleSelect
-            locale={locale}
-            onLocaleChange={(nextLocale) => {
-              navigate({
-                resetScroll: false,
-                search: (previous) => ({
-                  ...previous,
-                  locale: nextLocale,
-                }),
-              })
-            }}
-          />
+          <Card className="w-full md:w-72">
+            <CardContent>
+              <label className="flex flex-col gap-2 text-sm font-medium">
+                Locale
+                <NativeSelect
+                  className="w-full"
+                  value={locale}
+                  onChange={(event) => {
+                    const nextLocale = event.currentTarget.value
+
+                    if (isAppLocale(nextLocale)) {
+                      navigate({
+                        resetScroll: false,
+                        search: (previous) => ({
+                          ...previous,
+                          locale: nextLocale,
+                        }),
+                      })
+                    }
+                  }}
+                >
+                  {appLocales.map((appLocale) => (
+                    <NativeSelectOption key={appLocale} value={appLocale}>
+                      {appLocaleLabels[appLocale]}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+              </label>
+            </CardContent>
+          </Card>
         </div>
 
         <Accordion
@@ -487,41 +505,6 @@ function UpsertBillForm({
         <SubmissionPreviewCard control={form.control} />
       </aside>
     </div>
-  )
-}
-
-function LocaleSelect({
-  locale,
-  onLocaleChange,
-}: {
-  locale: AppLocale
-  onLocaleChange: (locale: AppLocale) => void
-}) {
-  return (
-    <Card className="w-full md:w-72">
-      <CardContent>
-        <label className="flex flex-col gap-2 text-sm font-medium">
-          Locale
-          <NativeSelect
-            className="w-full"
-            value={locale}
-            onChange={(event) => {
-              const nextLocale = event.currentTarget.value
-
-              if (isAppLocale(nextLocale)) {
-                onLocaleChange(nextLocale)
-              }
-            }}
-          >
-            {appLocales.map((appLocale) => (
-              <NativeSelectOption key={appLocale} value={appLocale}>
-                {appLocaleLabels[appLocale]}
-              </NativeSelectOption>
-            ))}
-          </NativeSelect>
-        </label>
-      </CardContent>
-    </Card>
   )
 }
 
