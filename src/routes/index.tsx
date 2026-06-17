@@ -495,7 +495,8 @@ function UpsertBillForm({
         <ResolverForm
           className="flex flex-col gap-6"
           form={form}
-          handleSubmit={(submission) => {
+          handleSubmit={async (submission) => {
+            await new Promise((resolve) => setTimeout(resolve, 900))
             console.info('Submitting bill', submission)
           }}
         >

@@ -13,6 +13,7 @@ import {
 } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 
 type UseResolverForm<
   TInput extends FieldValues,
@@ -103,7 +104,12 @@ function SubmitButton(
     form?: AnyResolverForm | undefined
   },
 ) {
-  const { children, disabled, form: explicitForm, ...passThrough } = props
+  const {
+    children,
+    disabled,
+    form: explicitForm,
+    ...passThrough
+  } = props
   const context = useFormContext()
 
   const form = explicitForm ?? context
@@ -117,11 +123,19 @@ function SubmitButton(
   return (
     <Button
       {...passThrough}
+      aria-busy={formState.isSubmitting}
       form={explicitForm?.id}
       type="submit"
       disabled={disabled || formState.isSubmitting}
     >
-      {formState.isSubmitting ? 'Loading' : children}
+      {formState.isSubmitting ? (
+        <>
+          <Spinner aria-hidden="true" data-icon="inline-start" />
+          <span>Loading</span>
+        </>
+      ) : (
+        children
+      )}
     </Button>
   )
 }
