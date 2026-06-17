@@ -497,6 +497,9 @@ function UpsertBillForm({
           form={form}
           handleSubmit={async (submission) => {
             await new Promise((resolve) => setTimeout(resolve, 900))
+            if (Math.random() < 0.5) {
+              throw new Error('The imaginary billing API rejected this submit.')
+            }
             console.info('Submitting bill', submission)
           }}
         >
