@@ -115,30 +115,23 @@ const requiredNumberInput = (message: string) =>
     .min(1, message)
     .transform((value) => Number(value))
 
-const lineItemSchema = z
-  .object({
-    id: z.string().optional(),
-    description: z.string().min(1, 'Add a description'),
-    quantity: requiredNumberInput('Quantity is required').pipe(
-      z.number().min(1, 'Quantity must be at least 1'),
-    ),
-    unitPrice: z
-      .string()
-      .min(1, 'Unit price is required')
-      .regex(/^\d+(\.\d{1,2})?$/, 'Use a valid money amount')
-      .transform(parseMoneyInputToCents)
-      .pipe(
-        z
-          .number()
-          .int('Unit price must resolve to whole cents')
-          .min(0, 'Unit price cannot be negative'),
-      ),
-    taxable: z.boolean(),
-  })
-  .transform(({ unitPrice, ...lineItem }) => ({
-    ...lineItem,
-    unitAmountCents: unitPrice,
-  }))
+const currencyAmountSchema = createCurrencyAmountSchema(
+  'Unit price is required',
+  z
+    .number()
+    .int('Unit price must resolve to whole cents')
+    .min(0, 'Unit price cannot be negative'),
+)
+
+const lineItemSchema = z.object({
+  id: z.string().optional(),
+  description: z.string().min(1, 'Add a description'),
+  quantity: requiredNumberInput('Quantity is required').pipe(
+    z.number().min(1, 'Quantity must be at least 1'),
+  ),
+  unitAmountCents: currencyAmountSchema,
+  taxable: z.boolean(),
+})
 
 const recurrenceBaseSchema = z.object({
   interval: requiredNumberInput('Repeat interval is required').pipe(
@@ -609,7 +602,7 @@ function LineItemsSection({ form }: { form: BillForm }) {
                   currency={currency}
                   label="Unit price"
                   min={0}
-                  name={`lineItems.${index}.unitPrice`}
+                  name={`lineItems.${index}.unitAmountCents`}
                   step="0.01"
                 />
                 <div className="flex items-end gap-3">
@@ -893,7 +886,7 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormInputValues {
       id: item.id,
       description: item.description,
       quantity: String(item.quantity),
-      unitPrice: formatCentsAsMoneyInput(item.unit_amount_cents),
+      unitAmountCents: z.encode(currencyAmountSchema, item.unit_amount_cents),
       taxable: item.taxable,
     })),
     taxRate: String(apiBill.tax_rate_bps / 100),
@@ -963,7 +956,7 @@ function getDefaultLineItem(): BillFormInputValues['lineItems'][number] {
   return {
     description: '',
     quantity: '1',
-    unitPrice: '0.00',
+    unitAmountCents: z.encode(currencyAmountSchema, 0),
     taxable: true,
   }
 }
@@ -1107,7 +1100,7 @@ function getApiSchedule(recurrence: NonNullable<BillFormValues['recurrence']>) {
 function calculateTotals(
   lineItems: Array<{
     quantity: unknown
-    unitPrice: unknown
+    unitAmountCents: unknown
     taxable: boolean
   }>,
   taxRate: unknown,
@@ -1115,7 +1108,8 @@ function calculateTotals(
   const subtotal = lineItems.reduce(
     (total, item) =>
       total +
-      ((Number(item.quantity) || 0) * parseMoneyInputToCents(item.unitPrice)) /
+      ((Number(item.quantity) || 0) *
+        parseCurrencyAmountInput(item.unitAmountCents)) /
         100,
     0,
   )
@@ -1124,7 +1118,7 @@ function calculateTotals(
       item.taxable
         ? total +
           ((Number(item.quantity) || 0) *
-            parseMoneyInputToCents(item.unitPrice)) /
+            parseCurrencyAmountInput(item.unitAmountCents)) /
             100
         : total,
     0,
@@ -1153,17 +1147,38 @@ function getMoneyFormatter(currency: string) {
   })
 }
 
-function parseMoneyInputToCents(value: unknown) {
-  const [major = '0', minor = ''] = String(value ?? '')
-    .replace(/[^\d.]/g, '')
-    .split('.')
+function createCurrencyAmountSchema(
+  requiredMessage: string,
+  centsSchema: z.ZodType<number, number>,
+) {
+  return z.codec(
+    z
+      .string()
+      .min(1, requiredMessage)
+      .regex(/^\d+(\.\d{1,2})?$/, 'Use a valid money amount'),
+    centsSchema,
+    {
+      decode: parseCurrencyAmountString,
+      encode: formatCurrencyAmountCents,
+    },
+  )
+}
+
+function parseCurrencyAmountInput(value: unknown) {
+  const parsed = currencyAmountSchema.safeParse(value)
+
+  return parsed.success ? parsed.data : 0
+}
+
+function parseCurrencyAmountString(value: string) {
+  const [major = '0', minor = ''] = String(value ?? '').split('.')
   const normalizedMajor = major === '' ? '0' : major
   const normalizedMinor = minor.padEnd(2, '0').slice(0, 2)
 
   return Number(normalizedMajor) * 100 + Number(normalizedMinor)
 }
 
-function formatCentsAsMoneyInput(value: number) {
+function formatCurrencyAmountCents(value: number) {
   return (value / 100).toFixed(2)
 }
 
