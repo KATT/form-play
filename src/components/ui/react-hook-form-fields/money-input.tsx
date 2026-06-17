@@ -11,6 +11,8 @@ import {
 } from '@/components/ui/input-group'
 import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
 
+const currencyAmountInputPattern = /^\d+(\.\d{1,2})?$/
+
 interface ControlledMoneyInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
@@ -29,7 +31,7 @@ interface ControlledMoneyInputProps<
       | 'value'
     >,
     ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
-  currency?: string
+  currency: string
 }
 
 function ControlledMoneyInput<
@@ -37,7 +39,7 @@ function ControlledMoneyInput<
   TName extends FieldPath<TFieldValues>,
   TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
-  currency = 'USD',
+  currency,
   control,
   id,
   label,
@@ -73,6 +75,12 @@ function ControlledMoneyInput<
                 type="text"
                 value={field.value == null ? '' : String(field.value)}
                 onBlur={() => {
+                  const formattedValue = formatCurrencyAmountInput(field.value)
+
+                  if (formattedValue !== undefined) {
+                    field.onChange(formattedValue)
+                  }
+
                   field.onBlur()
                 }}
                 onChange={(event) => field.onChange(event.currentTarget.value)}
@@ -97,7 +105,7 @@ function createCurrencyAmountSchema(
     z
       .string()
       .min(1, requiredMessage)
-      .regex(/^\d+(\.\d{1,2})?$/, 'Use a valid money amount'),
+      .regex(currencyAmountInputPattern, 'Use a valid money amount'),
     centsSchema,
     {
       decode: parseCurrencyAmountString,
@@ -121,6 +129,16 @@ function parseCurrencyAmountString(value: string) {
   const normalizedMinor = minor.padEnd(2, '0').slice(0, 2)
 
   return Number(normalizedMajor) * 100 + Number(normalizedMinor)
+}
+
+function formatCurrencyAmountInput(value: unknown) {
+  const input = String(value ?? '')
+
+  if (!currencyAmountInputPattern.test(input)) {
+    return undefined
+  }
+
+  return formatCurrencyAmountCents(parseCurrencyAmountString(input))
 }
 
 function formatCurrencyAmountCents(value: number) {
