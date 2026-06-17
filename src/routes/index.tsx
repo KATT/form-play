@@ -74,13 +74,11 @@ const recurrenceEndStrategies = [
   'after_occurrences',
 ] as const
 const accordionSections = ['create', 'edit'] as const
-const appLocales = ['en-US', 'en-GB', 'de-DE', 'fr-FR', 'ja-JP'] as const
+const appLocales = ['en-US', 'en-GB', 'sv-SE'] as const
 const appLocaleLabels: Record<(typeof appLocales)[number], string> = {
-  'de-DE': 'Deutsch (Deutschland)',
   'en-GB': 'English (United Kingdom)',
   'en-US': 'English (United States)',
-  'fr-FR': 'Français (France)',
-  'ja-JP': '日本語 (日本)',
+  'sv-SE': 'Svenska (Sverige)',
 }
 const weekdays = [
   'monday',
