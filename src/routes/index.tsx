@@ -261,7 +261,7 @@ const billFormSchema = billFormInputSchema.transform((values): ApiSubmission => 
                 interval: recurrence.interval,
                 starts_on: recurrence.startsOn,
                 anchor_date: anchorDate,
-                day_of_month: getDateDay(anchorDate),
+                day_of_month: Number(anchorDate.slice(8, 10)),
                 day_overflow: 'last_day' as const,
               }
             }
@@ -274,8 +274,8 @@ const billFormSchema = billFormInputSchema.transform((values): ApiSubmission => 
                 interval: recurrence.interval,
                 starts_on: recurrence.startsOn,
                 anchor_date: anchorDate,
-                month: getDateMonth(anchorDate),
-                day: getDateDay(anchorDate),
+                month: Number(anchorDate.slice(5, 7)),
+                day: Number(anchorDate.slice(8, 10)),
                 day_overflow: 'last_day' as const,
               }
             }
@@ -362,13 +362,16 @@ function Home() {
           multiple
           value={openSections}
           onValueChange={(sections) => {
-            const nextSections = sections.filter(isAccordionSection)
-
             navigate({
               resetScroll: false,
               search: (previous) => ({
                 ...previous,
-                sections: nextSections,
+                sections: sections.filter(
+                  (section): section is (typeof accordionSections)[number] =>
+                    accordionSections.includes(
+                      section as (typeof accordionSections)[number],
+                    ),
+                ),
               }),
             })
           }}
@@ -609,7 +612,13 @@ function RecurrenceFrequencyFields({ form }: { form: BillForm }) {
       >
         <WeekdayPicker
           control={form.control}
-          error={getRecurrenceError(form, 'weekdays')}
+          error={
+            (
+              form.formState.errors.recurrence as
+                | Record<string, { message?: string } | undefined>
+                | undefined
+            )?.weekdays?.message
+          }
           name="recurrence.weekdays"
         />
       </FormConditional>
@@ -815,7 +824,10 @@ function SubmissionSection({ form }: { form: BillForm }) {
       total: subtotal + tax,
     }
   }, [lineItems, taxRate])
-  const money = getMoneyFormatter(currency)
+  const money = new Intl.NumberFormat('en-US', {
+    currency,
+    style: 'currency',
+  })
 
   return (
     <Card>
@@ -873,14 +885,6 @@ function SubmissionPreviewCard({ form }: { form: BillForm }) {
   )
 }
 
-function getRecurrenceError(form: BillForm, name: string) {
-  const recurrenceErrors = form.formState.errors.recurrence as
-    | Record<string, { message?: string } | undefined>
-    | undefined
-
-  return recurrenceErrors?.[name]?.message
-}
-
 function WeekdayPicker({
   control,
   error,
@@ -936,7 +940,7 @@ function WeekdayPicker({
 }
 
 function CodePreviewCard({ title, value }: { title: string; value: unknown }) {
-  const code = formatCodePreview(value)
+  const code = typeof value === 'string' ? value : JSON.stringify(value, null, 2)
   const deferredCode = useDeferredValue(code)
   const isStale = code !== deferredCode
 
@@ -1121,29 +1125,10 @@ function getDefaultRecurrence(): NonNullable<
   }
 }
 
-function getDateMonth(value: string) {
-  return Number(value.slice(5, 7))
-}
-
-function getDateDay(value: string) {
-  return Number(value.slice(8, 10))
-}
-
-function getMoneyFormatter(currency: string) {
-  return new Intl.NumberFormat('en-US', {
-    currency,
-    style: 'currency',
-  })
-}
-
 function titleCase(value: string) {
   return value
     .replace(/_/g, ' ')
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
-}
-
-function formatCodePreview(value: unknown) {
-  return typeof value === 'string' ? value : JSON.stringify(value, null, 2)
 }
 
 function highlightJson(code: string) {
@@ -1166,13 +1151,4 @@ function highlightJson(code: string) {
   highlightedJsonCache.set(code, highlight)
 
   return highlight
-}
-
-function isAccordionSection(
-  value: unknown,
-): value is (typeof accordionSections)[number] {
-  return (
-    typeof value === 'string' &&
-    accordionSections.includes(value as (typeof accordionSections)[number])
-  )
 }
