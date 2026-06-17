@@ -3,7 +3,9 @@ import {
   Controller,
   type Control,
   type FieldPath,
+  type FieldPathValue,
   type FieldValues,
+  useWatch,
 } from 'react-hook-form'
 
 import { Checkbox } from '@/components/ui/checkbox'
@@ -27,95 +29,118 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
-type FormWithControl = {
-  control: unknown
-}
-
-type ControlledFieldBase<
+interface ControlledFieldBase<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-> = {
-  form: FormWithControl
+> {
+  control: unknown
   label: string
   name: TName
 }
 
-function getFormControl<TFieldValues extends FieldValues>(
-  form: FormWithControl,
-) {
-  return form.control as Control<TFieldValues>
+function getControl<TFieldValues extends FieldValues>(control: unknown) {
+  return control as Control<TFieldValues>
 }
 
-type ControlledTextInputProps<
+interface ControlledTextInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-> = Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
-> &
-  ControlledFieldBase<TFieldValues, TName>
+>
+  extends
+    Omit<
+      React.InputHTMLAttributes<HTMLInputElement>,
+      'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
+    >,
+    ControlledFieldBase<TFieldValues, TName> {}
 
-type ControlledMoneyInputProps<
+interface ControlledMoneyInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-> = Omit<
+> extends Omit<
   ControlledTextInputProps<TFieldValues, TName>,
   'inputMode' | 'type'
-> & {
+> {
   currency?: string
 }
 
-type ControlledSelectInputProps<
+interface ControlledSelectInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-> = Omit<
-  React.SelectHTMLAttributes<HTMLSelectElement>,
-  'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'size' | 'value'
-> &
-  ControlledFieldBase<TFieldValues, TName> & {
-    children: React.ReactNode
-  }
+>
+  extends
+    Omit<
+      React.SelectHTMLAttributes<HTMLSelectElement>,
+      | 'defaultValue'
+      | 'form'
+      | 'name'
+      | 'onBlur'
+      | 'onChange'
+      | 'size'
+      | 'value'
+    >,
+    ControlledFieldBase<TFieldValues, TName> {
+  children: React.ReactNode
+}
 
-type ControlledTextareaInputProps<
+interface ControlledTextareaInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-> = Omit<
-  React.TextareaHTMLAttributes<HTMLTextAreaElement>,
-  'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
-> &
-  ControlledFieldBase<TFieldValues, TName> & {
-    className?: string
-  }
+>
+  extends
+    Omit<
+      React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+      'defaultValue' | 'form' | 'name' | 'onBlur' | 'onChange' | 'value'
+    >,
+    ControlledFieldBase<TFieldValues, TName> {
+  className?: string
+}
 
-type ControlledCheckboxFieldProps<
+interface ControlledCheckboxFieldProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-> = Omit<
-  React.ComponentProps<typeof Checkbox>,
-  'checked' | 'defaultChecked' | 'form' | 'name' | 'onBlur' | 'onCheckedChange'
-> &
-  ControlledFieldBase<TFieldValues, TName>
+>
+  extends
+    Omit<
+      React.ComponentProps<typeof Checkbox>,
+      | 'checked'
+      | 'defaultChecked'
+      | 'form'
+      | 'name'
+      | 'onBlur'
+      | 'onCheckedChange'
+    >,
+    ControlledFieldBase<TFieldValues, TName> {}
 
-type RadioCardOption = {
+interface RadioCardOption {
   description?: React.ReactNode
   disabled?: boolean
   title: React.ReactNode
   value: string
 }
 
-type ControlledRadioCardGroupProps<
+interface ControlledRadioCardGroupProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-> = ControlledFieldBase<TFieldValues, TName> & {
+> extends ControlledFieldBase<TFieldValues, TName> {
   className?: string
   options: readonly RadioCardOption[]
+}
+
+interface FormConditionalProps<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+> {
+  children: React.ReactNode
+  control: unknown
+  name: TName
+  render: (value: FieldPathValue<TFieldValues, TName>) => boolean
 }
 
 function ControlledTextInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({
-  form,
+  control,
   id,
   label,
   name,
@@ -126,7 +151,7 @@ function ControlledTextInput<
 
   return (
     <Controller
-      control={getFormControl<TFieldValues>(form)}
+      control={getControl<TFieldValues>(control)}
       name={name}
       render={({ field, fieldState }) => {
         const error = fieldState.error?.message
@@ -156,7 +181,7 @@ function ControlledMoneyInput<
   TName extends FieldPath<TFieldValues>,
 >({
   currency = 'USD',
-  form,
+  control,
   id,
   label,
   name,
@@ -169,7 +194,7 @@ function ControlledMoneyInput<
 
   return (
     <Controller
-      control={getFormControl<TFieldValues>(form)}
+      control={getControl<TFieldValues>(control)}
       name={name}
       render={({ field, fieldState }) => {
         const error = fieldState.error?.message
@@ -212,13 +237,13 @@ function ControlledSelectInput<
   TName extends FieldPath<TFieldValues>,
 >({
   children,
-  form,
+  control,
   name,
   ...props
 }: ControlledSelectInputProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={getFormControl<TFieldValues>(form)}
+      control={getControl<TFieldValues>(control)}
       name={name}
       render={({ field, fieldState }) => (
         <SelectInput
@@ -239,10 +264,14 @@ function ControlledSelectInput<
 function ControlledTextareaInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
->({ form, name, ...props }: ControlledTextareaInputProps<TFieldValues, TName>) {
+>({
+  control,
+  name,
+  ...props
+}: ControlledTextareaInputProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={getFormControl<TFieldValues>(form)}
+      control={getControl<TFieldValues>(control)}
       name={name}
       render={({ field, fieldState }) => (
         <TextareaInput
@@ -262,14 +291,14 @@ function ControlledCheckboxField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({
-  form,
+  control,
   label,
   name,
   ...props
 }: ControlledCheckboxFieldProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={getFormControl<TFieldValues>(form)}
+      control={getControl<TFieldValues>(control)}
       name={name}
       render={({ field, fieldState }) => (
         <CheckboxField
@@ -289,7 +318,7 @@ function ControlledRadioCardGroup<
   TName extends FieldPath<TFieldValues>,
 >({
   className,
-  form,
+  control,
   label,
   name,
   options,
@@ -298,7 +327,7 @@ function ControlledRadioCardGroup<
     <Field>
       <FieldLabel>{label}</FieldLabel>
       <Controller
-        control={getFormControl<TFieldValues>(form)}
+        control={getControl<TFieldValues>(control)}
         name={name}
         render={({ field, fieldState }) => {
           const error = fieldState.error?.message
@@ -350,6 +379,23 @@ function ControlledRadioCardGroup<
       />
     </Field>
   )
+}
+
+function FormConditional<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+>({
+  children,
+  control,
+  name,
+  render,
+}: FormConditionalProps<TFieldValues, TName>) {
+  const value = useWatch({
+    control: getControl<TFieldValues>(control),
+    name,
+  }) as FieldPathValue<TFieldValues, TName>
+
+  return render(value) ? <>{children}</> : null
 }
 
 function SelectInput({
@@ -446,4 +492,5 @@ export {
   ControlledSelectInput,
   ControlledTextInput,
   ControlledTextareaInput,
+  FormConditional,
 }
