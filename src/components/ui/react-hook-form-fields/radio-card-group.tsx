@@ -10,11 +10,13 @@ import {
 } from '@/components/ui/field'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
+import { ConditionalTooltip } from '@/components/ui/conditional-tooltip'
 import { cn } from '@/lib/utils'
 
 interface RadioCardOption {
   description?: React.ReactNode
   disabled?: boolean
+  disabledReason?: React.ReactNode
   title: React.ReactNode
   value: string
 }
@@ -58,15 +60,21 @@ function ControlledRadioCardGroup<
               >
                 {options.map((option) => {
                   const optionId = `${String(name)}-${option.value}`
-
-                  return (
-                    <FieldLabel htmlFor={optionId} key={option.value}>
+                  const card = (
+                    <FieldLabel
+                      htmlFor={optionId}
+                      aria-disabled={option.disabled || undefined}
+                      className={cn(
+                        'cursor-pointer',
+                        option.disabled && 'cursor-not-allowed opacity-60',
+                      )}
+                    >
                       <Field
                         data-disabled={option.disabled || undefined}
                         orientation="horizontal"
                         className={cn(
-                          'min-h-32 cursor-pointer rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
-                          option.disabled && 'cursor-not-allowed opacity-50',
+                          'min-h-32 rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
+                          option.disabled && 'hover:bg-transparent',
                         )}
                       >
                         <FieldContent>
@@ -85,6 +93,15 @@ function ControlledRadioCardGroup<
                         />
                       </Field>
                     </FieldLabel>
+                  )
+
+                  return (
+                    <ConditionalTooltip
+                      disabledReason={option.disabledReason}
+                      key={option.value}
+                    >
+                      {card}
+                    </ConditionalTooltip>
                   )
                 })}
               </RadioGroup>

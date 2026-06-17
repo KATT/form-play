@@ -78,20 +78,6 @@ const weekdays = [
   'saturday',
   'sunday',
 ] as const satisfies readonly ApiWeekday[]
-const billTypeOptions = [
-  {
-    value: 'one_off',
-    title: 'One-off',
-    description: 'Collect this bill once with a fixed due date.',
-  },
-  {
-    value: 'repeating',
-    title: 'Repeating',
-    description:
-      'Generate future bills on a daily, weekly, monthly, or yearly cadence.',
-  },
-] as const
-
 const routeSearchSchema = z.object({
   sections: z.array(z.enum(accordionSections)).catch(['create']),
 })
@@ -533,6 +519,12 @@ function BillDetailsSection({ form }: { form: BillForm }) {
 }
 
 function BillTypeSection({ form }: { form: BillForm }) {
+  const editorMode = useWatch({ control: form.control, name: 'editorMode' })
+  const billTypeDisabledReason =
+    editorMode === 'api'
+      ? 'Bill type is locked for imported API bills so the update payload stays compatible with the existing bill schedule.'
+      : undefined
+
   return (
     <Card>
       <CardHeader>
@@ -543,7 +535,23 @@ function BillTypeSection({ form }: { form: BillForm }) {
           control={form.control}
           label="Bill type"
           name="billType"
-          options={billTypeOptions}
+          options={[
+            {
+              value: 'one_off',
+              title: 'One-off',
+              description: 'Collect this bill once with a fixed due date.',
+              disabled: !!billTypeDisabledReason,
+              disabledReason: billTypeDisabledReason,
+            },
+            {
+              value: 'repeating',
+              title: 'Repeating',
+              description:
+                'Generate future bills on a daily, weekly, monthly, or yearly cadence.',
+              disabled: !!billTypeDisabledReason,
+              disabledReason: billTypeDisabledReason,
+            },
+          ]}
         />
 
         <FormConditional
