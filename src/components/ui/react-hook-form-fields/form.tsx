@@ -176,6 +176,8 @@ function SubmitButton(
 
     return feedbackState
   })()
+  const shouldResetStaleFeedback =
+    feedbackState === 'input-error' && errorCount === 0
 
   useEffect(() => {
     const resetButtonFeedback = () => {
@@ -183,6 +185,11 @@ function SubmitButton(
     }
 
     if (isSubmitting) {
+      resetButtonFeedback()
+      return
+    }
+
+    if (shouldResetStaleFeedback) {
       resetButtonFeedback()
       return
     }
@@ -204,7 +211,12 @@ function SubmitButton(
     return () => {
       clearTimeout(timeout)
     }
-  }, [isSubmitting, settledSubmitState, submitCount])
+  }, [
+    isSubmitting,
+    settledSubmitState,
+    shouldResetStaleFeedback,
+    submitCount,
+  ])
 
   const submitButtonMotion = (() => {
     switch (submitButtonState) {
