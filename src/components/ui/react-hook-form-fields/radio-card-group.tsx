@@ -8,7 +8,6 @@ import {
 } from '@/components/ui/field'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
-import { ConditionalTooltip } from '@/components/ui/conditional-tooltip'
 import { cn } from '@/lib/utils'
 
 interface RadioCardGroupContextValue {
@@ -82,7 +81,6 @@ interface ControlledRadioCardGroupItemProps {
   children: React.ReactNode
   className?: string
   disabled?: boolean
-  disabledReason: React.ReactNode | undefined
   value: string
 }
 
@@ -90,46 +88,43 @@ function ControlledRadioCardGroupItem({
   children,
   className,
   disabled,
-  disabledReason,
   value,
 }: ControlledRadioCardGroupItemProps) {
   const { error, fieldRef, selectedValue } = useRadioCardGroupContext()
   const optionId = useId()
 
   return (
-    <ConditionalTooltip disabledReason={disabledReason}>
-      <FieldLabel
-        htmlFor={optionId}
-        aria-disabled={disabled || undefined}
+    <FieldLabel
+      htmlFor={optionId}
+      aria-disabled={disabled || undefined}
+      className={cn(
+        'cursor-pointer',
+        disabled && 'cursor-not-allowed opacity-60',
+      )}
+    >
+      <Field
+        data-disabled={disabled || undefined}
+        orientation="horizontal"
         className={cn(
-          'cursor-pointer',
-          disabled && 'cursor-not-allowed opacity-60',
+          'min-h-32 rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
+          disabled && 'hover:bg-transparent',
+          className,
         )}
       >
-        <Field
-          data-disabled={disabled || undefined}
-          orientation="horizontal"
-          className={cn(
-            'min-h-32 rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
-            disabled && 'hover:bg-transparent',
-            className,
-          )}
-        >
-          {children}
-          <RadioGroupItem
-            aria-invalid={error}
-            disabled={disabled}
-            id={optionId}
-            ref={
-              selectedValue === value || (!selectedValue && !disabled)
-                ? fieldRef
-                : undefined
-            }
-            value={value}
-          />
-        </Field>
-      </FieldLabel>
-    </ConditionalTooltip>
+        {children}
+        <RadioGroupItem
+          aria-invalid={error}
+          disabled={disabled}
+          id={optionId}
+          ref={
+            selectedValue === value || (!selectedValue && !disabled)
+              ? fieldRef
+              : undefined
+          }
+          value={value}
+        />
+      </Field>
+    </FieldLabel>
   )
 }
 

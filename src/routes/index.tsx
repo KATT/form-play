@@ -32,6 +32,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConditionalTooltip } from '@/components/ui/conditional-tooltip'
 import { FormConditional } from '@/components/ui/react-hook-form-fields/form-conditional'
 import { ControlledCheckboxField } from '@/components/ui/react-hook-form-fields/checkbox-field'
 import {
@@ -507,9 +508,18 @@ function BillDetailsSection({ form }: { form: BillForm }) {
 
 function BillTypeSection({ form }: { form: BillForm }) {
   const editorMode = useWatch({ control: form.control, name: 'editorMode' })
+  const billType = useWatch({ control: form.control, name: 'billType' })
   const billTypeDisabledReason =
     editorMode === 'api'
       ? 'Bill type is locked for imported API bills so the update payload stays compatible with the existing bill schedule.'
+      : undefined
+  const oneOffDisabledReason =
+    billTypeDisabledReason && billType !== 'one_off'
+      ? billTypeDisabledReason
+      : undefined
+  const repeatingDisabledReason =
+    billTypeDisabledReason && billType !== 'repeating'
+      ? billTypeDisabledReason
       : undefined
 
   return (
@@ -523,31 +533,33 @@ function BillTypeSection({ form }: { form: BillForm }) {
           label="Bill type"
           name="billType"
         >
-          <ControlledRadioCardGroupItem
-            disabled={!!billTypeDisabledReason}
-            disabledReason={billTypeDisabledReason}
-            value="one_off"
-          >
-            <FieldContent>
-              <FieldTitle>One-off</FieldTitle>
-              <FieldDescription>
-                Collect this bill once with a fixed due date.
-              </FieldDescription>
-            </FieldContent>
-          </ControlledRadioCardGroupItem>
-          <ControlledRadioCardGroupItem
-            disabled={!!billTypeDisabledReason}
-            disabledReason={billTypeDisabledReason}
-            value="repeating"
-          >
-            <FieldContent>
-              <FieldTitle>Repeating</FieldTitle>
-              <FieldDescription>
-                Generate future bills on a daily, weekly, monthly, or yearly
-                cadence.
-              </FieldDescription>
-            </FieldContent>
-          </ControlledRadioCardGroupItem>
+          <ConditionalTooltip disabledReason={oneOffDisabledReason}>
+            <ControlledRadioCardGroupItem
+              disabled={!!oneOffDisabledReason}
+              value="one_off"
+            >
+              <FieldContent>
+                <FieldTitle>One-off</FieldTitle>
+                <FieldDescription>
+                  Collect this bill once with a fixed due date.
+                </FieldDescription>
+              </FieldContent>
+            </ControlledRadioCardGroupItem>
+          </ConditionalTooltip>
+          <ConditionalTooltip disabledReason={repeatingDisabledReason}>
+            <ControlledRadioCardGroupItem
+              disabled={!!repeatingDisabledReason}
+              value="repeating"
+            >
+              <FieldContent>
+                <FieldTitle>Repeating</FieldTitle>
+                <FieldDescription>
+                  Generate future bills on a daily, weekly, monthly, or yearly
+                  cadence.
+                </FieldDescription>
+              </FieldContent>
+            </ControlledRadioCardGroupItem>
+          </ConditionalTooltip>
         </ControlledRadioCardGroup>
 
         <FieldGroup className="mt-5 grid gap-4 md:grid-cols-2">
