@@ -1,6 +1,6 @@
 export type ApiBillKind = 'one_off' | 'repeating'
 export type ApiBillStatus = 'draft' | 'scheduled' | 'sent' | 'paid'
-export type ApiCurrency = 'USD' | 'EUR' | 'GBP' | 'SEK'
+export type ApiCurrency = 'USD' | 'EUR' | 'GBP' | 'SEK' | 'JPY'
 export type ApiMoneyCents = number
 export type ApiRecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
 export type ApiWeekday =

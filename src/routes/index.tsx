@@ -63,7 +63,7 @@ import {
   type ApiWeekday,
 } from './-bill-api'
 
-const currencies = ['USD', 'EUR', 'GBP', 'SEK'] as const
+const currencies = ['USD', 'EUR', 'GBP', 'SEK', 'JPY'] as const
 const billStatuses = ['draft', 'scheduled', 'sent', 'paid'] as const
 const editorModes = ['new', 'api'] as const
 const apiSubmitIntents = ['create', 'update'] as const
@@ -74,10 +74,11 @@ const recurrenceEndStrategies = [
   'after_occurrences',
 ] as const
 const accordionSections = ['create', 'edit'] as const
-const appLocales = ['en-US', 'en-GB', 'sv-SE'] as const
+const appLocales = ['en-US', 'en-GB', 'sv-SE', 'ja-JP'] as const
 const appLocaleLabels: Record<(typeof appLocales)[number], string> = {
   'en-GB': 'English (United Kingdom)',
   'en-US': 'English (United States)',
+  'ja-JP': '日本語 (日本)',
   'sv-SE': 'Svenska (Sverige)',
 }
 const weekdays = [
