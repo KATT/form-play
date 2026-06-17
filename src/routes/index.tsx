@@ -8,7 +8,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Suspense, use, useDeferredValue, useMemo } from 'react'
 import {
   type UseFormReturn,
-  Controller,
   useFieldArray,
   useForm,
   useWatch,
@@ -31,9 +30,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
 import { ConditionalTooltip } from '@/components/ui/conditional-tooltip'
 import { FormConditional } from '@/components/ui/react-hook-form-fields/form-conditional'
+import { ControlledCheckboxGroup } from '@/components/ui/react-hook-form-fields/checkbox-group'
 import { ControlledCheckboxField } from '@/components/ui/react-hook-form-fields/checkbox-field'
 import {
   ControlledMoneyInput,
@@ -47,12 +46,9 @@ import { ControlledSelectInput } from '@/components/ui/react-hook-form-fields/se
 import { ControlledTextInput } from '@/components/ui/react-hook-form-fields/text-input'
 import { ControlledTextareaInput } from '@/components/ui/react-hook-form-fields/textarea-input'
 import {
-  Field,
   FieldContent,
   FieldDescription,
-  FieldError,
   FieldGroup,
-  FieldLabel,
   FieldTitle,
 } from '@/components/ui/field'
 import { NativeSelectOption } from '@/components/ui/native-select'
@@ -669,7 +665,18 @@ function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
         name="recurrence.frequency"
         render={(frequency) => frequency === 'daily' || frequency === 'weekly'}
       >
-        <WeekdayPicker control={control} name="recurrence.weekdays" />
+        <ControlledCheckboxGroup
+          className="md:col-span-2"
+          control={control}
+          description="Choose which weekdays should generate an occurrence."
+          label="Weekdays"
+          name="recurrence.weekdays"
+          options={weekdays.map((weekday) => ({
+            label: titleCase(weekday),
+            value: weekday,
+          }))}
+          optionsClassName="grid grid-cols-2 gap-3 sm:grid-cols-4"
+        />
       </FormConditional>
       <FormConditional
         control={control}
@@ -930,57 +937,6 @@ function SubmissionPreviewCard({ control }: { control: BillFormControl }) {
     <CodePreviewCard
       title="Derived submission preview"
       value={submissionPreview}
-    />
-  )
-}
-
-function WeekdayPicker({
-  control,
-  name,
-}: {
-  control: BillForm['control']
-  name: 'recurrence.weekdays'
-}) {
-  return (
-    <Controller
-      control={control}
-      name={name}
-      render={({ field, fieldState }) => {
-        const selectedWeekdays = field.value ?? []
-        const error = fieldState.error?.message
-
-        return (
-          <Field data-invalid={!!error} className="md:col-span-2">
-            <FieldLabel>Weekdays</FieldLabel>
-            <FieldGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              {weekdays.map((weekday) => (
-                <Field orientation="horizontal" key={weekday}>
-                  <FieldLabel className="items-center">
-                    <Checkbox
-                      checked={selectedWeekdays.includes(weekday)}
-                      onCheckedChange={(checked) => {
-                        field.onChange(
-                          checked
-                            ? [...selectedWeekdays, weekday]
-                            : selectedWeekdays.filter(
-                                (selectedWeekday) =>
-                                  selectedWeekday !== weekday,
-                              ),
-                        )
-                      }}
-                    />
-                    {titleCase(weekday)}
-                  </FieldLabel>
-                </Field>
-              ))}
-            </FieldGroup>
-            <FieldDescription>
-              Choose which weekdays should generate an occurrence.
-            </FieldDescription>
-            <FieldError>{error}</FieldError>
-          </Field>
-        )
-      }}
     />
   )
 }
