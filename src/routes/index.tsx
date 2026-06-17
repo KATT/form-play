@@ -11,7 +11,6 @@ import {
   Controller,
   useFieldArray,
   useForm,
-  useFormState,
   useWatch,
 } from 'react-hook-form'
 import { z } from 'zod'
@@ -663,8 +662,6 @@ function RepeatingScheduleFields({ control }: { control: BillFormControl }) {
 }
 
 function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
-  const { errors } = useFormState({ control })
-
   return (
     <>
       <FormConditional
@@ -672,17 +669,7 @@ function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
         name="recurrence.frequency"
         render={(frequency) => frequency === 'daily' || frequency === 'weekly'}
       >
-        <WeekdayPicker
-          control={control}
-          error={
-            (
-              errors.recurrence as
-                | Record<string, { message?: string } | undefined>
-                | undefined
-            )?.weekdays?.message
-          }
-          name="recurrence.weekdays"
-        />
+        <WeekdayPicker control={control} name="recurrence.weekdays" />
       </FormConditional>
       <FormConditional
         control={control}
@@ -949,55 +936,52 @@ function SubmissionPreviewCard({ control }: { control: BillFormControl }) {
 
 function WeekdayPicker({
   control,
-  error,
   name,
 }: {
   control: BillForm['control']
-  error?: string
   name: 'recurrence.weekdays'
 }) {
   return (
-    <Field data-invalid={!!error} className="md:col-span-2">
-      <FieldLabel>Weekdays</FieldLabel>
-      <FieldGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Controller
-          control={control}
-          name={name}
-          render={({ field }) => {
-            const selectedWeekdays = field.value ?? []
+    <Controller
+      control={control}
+      name={name}
+      render={({ field, fieldState }) => {
+        const selectedWeekdays = field.value ?? []
+        const error = fieldState.error?.message
 
-            return (
-              <>
-                {weekdays.map((weekday) => (
-                  <Field orientation="horizontal" key={weekday}>
-                    <FieldLabel className="items-center">
-                      <Checkbox
-                        checked={selectedWeekdays.includes(weekday)}
-                        onCheckedChange={(checked) => {
-                          field.onChange(
-                            checked
-                              ? [...selectedWeekdays, weekday]
-                              : selectedWeekdays.filter(
-                                  (selectedWeekday) =>
-                                    selectedWeekday !== weekday,
-                                ),
-                          )
-                        }}
-                      />
-                      {titleCase(weekday)}
-                    </FieldLabel>
-                  </Field>
-                ))}
-              </>
-            )
-          }}
-        />
-      </FieldGroup>
-      <FieldDescription>
-        Choose which weekdays should generate an occurrence.
-      </FieldDescription>
-      <FieldError>{error}</FieldError>
-    </Field>
+        return (
+          <Field data-invalid={!!error} className="md:col-span-2">
+            <FieldLabel>Weekdays</FieldLabel>
+            <FieldGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {weekdays.map((weekday) => (
+                <Field orientation="horizontal" key={weekday}>
+                  <FieldLabel className="items-center">
+                    <Checkbox
+                      checked={selectedWeekdays.includes(weekday)}
+                      onCheckedChange={(checked) => {
+                        field.onChange(
+                          checked
+                            ? [...selectedWeekdays, weekday]
+                            : selectedWeekdays.filter(
+                                (selectedWeekday) =>
+                                  selectedWeekday !== weekday,
+                              ),
+                        )
+                      }}
+                    />
+                    {titleCase(weekday)}
+                  </FieldLabel>
+                </Field>
+              ))}
+            </FieldGroup>
+            <FieldDescription>
+              Choose which weekdays should generate an occurrence.
+            </FieldDescription>
+            <FieldError>{error}</FieldError>
+          </Field>
+        )
+      }}
+    />
   )
 }
 
