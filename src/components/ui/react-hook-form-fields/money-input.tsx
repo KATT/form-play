@@ -81,7 +81,7 @@ function ControlledMoneyInput<
             <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
             <InputGroup>
               {currencyAdornment.align === 'inline-start' ? (
-                <InputGroupAddon align="inline-start">
+                <InputGroupAddon>
                   <InputGroupText>{currencyAdornment.value}</InputGroupText>
                 </InputGroupAddon>
               ) : null}
