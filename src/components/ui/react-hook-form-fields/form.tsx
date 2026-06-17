@@ -1,5 +1,5 @@
 import { type ComponentProps, useEffect, useRef, useState, useId } from 'react'
-import { AnimatePresence, motion, useAnimationControls } from 'motion/react'
+import { AnimatePresence, motion } from 'motion/react'
 import {
   CheckIcon,
   type LucideIcon,
@@ -142,7 +142,6 @@ function SubmitButton(
     iconPosition = 'start',
     ...passThrough
   } = props
-  const buttonAnimationControls = useAnimationControls()
   const context = useFormContext()
   const Icon = icon
   const lastSettledSubmitCount = useRef(0)
@@ -178,13 +177,6 @@ function SubmitButton(
   useEffect(() => {
     const resetButtonFeedback = () => {
       setFeedbackState('idle')
-      void buttonAnimationControls.start({
-        rotate: 0,
-        scale: 1,
-        x: 0,
-        y: 0,
-        transition: { duration: 0.2 },
-      })
     }
 
     if (isSubmitting) {
@@ -202,50 +194,6 @@ function SubmitButton(
     lastSettledSubmitCount.current = submitCount
     setFeedbackState(settledSubmitState)
 
-    void buttonAnimationControls.start((() => {
-      switch (settledSubmitState) {
-        case 'success':
-          return {
-            rotate: 0,
-            scale: 1,
-            x: 0,
-            y: 0,
-            transition: { duration: 0.2 },
-          }
-        case 'input-error':
-          return {
-            rotate: [0, -1.5, 1.5, 0],
-            scale: [1, 1.02, 1],
-            y: [0, -2, 0],
-            transition: { duration: 0.3 },
-          }
-        case 'server-error':
-          return {
-            rotate: [0, -1, 1, -1, 1, 0],
-            scale: [1, 0.98, 1],
-            x: [0, -6, 6, -4, 4, 0],
-            transition: { duration: 0.35 },
-          }
-        case 'idle':
-          return {
-            rotate: 0,
-            scale: 1,
-            x: 0,
-            y: 0,
-            transition: { duration: 0.2 },
-          }
-        default:
-          settledSubmitState satisfies never
-          return {
-            rotate: 0,
-            scale: 1,
-            x: 0,
-            y: 0,
-            transition: { duration: 0.2 },
-          }
-      }
-    })())
-
     const timeout = setTimeout(() => {
       resetButtonFeedback()
     }, 1800)
@@ -253,12 +201,33 @@ function SubmitButton(
     return () => {
       clearTimeout(timeout)
     }
-  }, [
-    buttonAnimationControls,
-    isSubmitting,
-    settledSubmitState,
-    submitCount,
-  ])
+  }, [isSubmitting, settledSubmitState, submitCount])
+
+  const submitButtonMotion = (() => {
+    switch (submitButtonState) {
+      case 'idle':
+      case 'submitting':
+      case 'success':
+        return { rotate: 0, scale: 1, x: 0, y: 0 }
+      case 'input-error':
+        return {
+          rotate: [0, -1.5, 1.5, 0],
+          scale: [1, 1.02, 1],
+          x: 0,
+          y: [0, -2, 0],
+        }
+      case 'server-error':
+        return {
+          rotate: [0, -1, 1, -1, 1, 0],
+          scale: [1, 0.98, 1],
+          x: [0, -6, 6, -4, 4, 0],
+          y: 0,
+        }
+      default:
+        submitButtonState satisfies never
+        return { rotate: 0, scale: 1, x: 0, y: 0 }
+    }
+  })()
 
   const submitButtonToneClassName = ((): string | undefined => {
     switch (submitButtonState) {
@@ -368,7 +337,8 @@ function SubmitButton(
       form={explicitForm?.id}
       render={
         <motion.button
-          animate={buttonAnimationControls}
+          animate={submitButtonMotion}
+          transition={{ duration: 0.35 }}
           whileHover={isSubmitting ? undefined : { y: -1 }}
           whileTap={isSubmitting ? undefined : { scale: 0.98 }}
         />
