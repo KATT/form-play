@@ -38,6 +38,7 @@ import {
 import {
   CheckboxField,
   ControlledCheckboxField,
+  ControlledMoneyInput,
   ControlledRadioCardGroup,
   ControlledSelectInput,
   ControlledTextInput,
@@ -104,10 +105,6 @@ export const Route = createFileRoute('/')({
   validateSearch: routeSearchSchema,
 })
 
-const money = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-})
 const shikiHighlighter = createHighlighterCore({
   engine: createJavaScriptRegexEngine(),
   langs: [jsonLanguage],
@@ -547,6 +544,7 @@ function LineItemsSection({ form }: { form: BillForm }) {
     control: form.control,
     name: 'lineItems',
   })
+  const currency = useWatch({ control: form.control, name: 'currency' })
 
   return (
     <Card>
@@ -570,13 +568,13 @@ function LineItemsSection({ form }: { form: BillForm }) {
                   name={`lineItems.${index}.quantity`}
                   type="number"
                 />
-                <ControlledTextInput
+                <ControlledMoneyInput
+                  currency={currency}
                   form={form}
                   label="Unit price"
                   min={0}
                   name={`lineItems.${index}.unitPrice`}
                   step="0.01"
-                  type="number"
                 />
                 <div className="flex items-end gap-3">
                   <ControlledCheckboxField
@@ -648,7 +646,9 @@ function PaymentNotesSection({ form }: { form: BillForm }) {
 function SubmissionSection({ form }: { form: BillForm }) {
   const lineItems = useWatch({ control: form.control, name: 'lineItems' })
   const taxRate = useWatch({ control: form.control, name: 'taxRate' })
+  const currency = useWatch({ control: form.control, name: 'currency' })
   const totals = calculateTotals(lineItems ?? [], Number(taxRate) || 0)
+  const money = getMoneyFormatter(currency)
 
   return (
     <Card>
@@ -1124,6 +1124,13 @@ function getDateMonth(value: string) {
 
 function getDateDay(value: string) {
   return Number(value.slice(8, 10))
+}
+
+function getMoneyFormatter(currency: string) {
+  return new Intl.NumberFormat('en-US', {
+    currency,
+    style: 'currency',
+  })
 }
 
 function titleCase(value: string) {

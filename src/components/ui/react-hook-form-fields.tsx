@@ -47,6 +47,16 @@ type ControlledTextInputProps<
 > &
   ControlledFieldBase<TFieldValues, TName>
 
+type ControlledMoneyInputProps<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+> = Omit<
+  ControlledTextInputProps<TFieldValues, TName>,
+  'inputMode' | 'type'
+> & {
+  currency?: string
+}
+
 type ControlledSelectInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
@@ -111,6 +121,47 @@ function ControlledTextInput<
           value={field.value == null ? '' : String(field.value)}
           onBlur={field.onBlur}
           onChange={(event) => field.onChange(event.currentTarget.value)}
+        />
+      )}
+    />
+  )
+}
+
+function ControlledMoneyInput<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+>({
+  currency = 'USD',
+  form,
+  name,
+  placeholder,
+  ...props
+}: ControlledMoneyInputProps<TFieldValues, TName>) {
+  const error = getFieldError(form.formState.errors, name)
+  const currencySymbol = getCurrencySymbol(currency)
+
+  return (
+    <Controller
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <TextInput
+          {...props}
+          error={error}
+          inputMode="decimal"
+          name={field.name}
+          placeholder={placeholder ?? `0.00 ${currency}`}
+          type="text"
+          value={formatMoneyInputValue(field.value)}
+          onBlur={(event) => {
+            field.onBlur()
+            field.onChange(formatMoneyInputValue(event.currentTarget.value))
+          }}
+          onChange={(event) => {
+            field.onChange(normalizeMoneyInputValue(event.currentTarget.value))
+          }}
+          prefix={currencySymbol}
+          suffix={currency}
         />
       )}
     />
@@ -291,10 +342,14 @@ function TextInput({
   error,
   id,
   label,
+  prefix,
+  suffix,
   ...props
 }: React.InputHTMLAttributes<HTMLInputElement> & {
   error?: string
   label: string
+  prefix?: React.ReactNode
+  suffix?: React.ReactNode
 }) {
   const generatedId = useId()
   const inputId = id ?? generatedId
@@ -302,7 +357,24 @@ function TextInput({
   return (
     <Field data-invalid={!!error}>
       <FieldLabel htmlFor={inputId}>{label}</FieldLabel>
-      <Input aria-invalid={!!error} id={inputId} {...props} />
+      <div className="relative">
+        {prefix ? (
+          <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-sm text-muted-foreground">
+            {prefix}
+          </span>
+        ) : null}
+        <Input
+          aria-invalid={!!error}
+          className={cn(prefix && 'pl-7', suffix && 'pr-12')}
+          id={inputId}
+          {...props}
+        />
+        {suffix ? (
+          <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-xs font-medium text-muted-foreground">
+            {suffix}
+          </span>
+        ) : null}
+      </div>
       <FieldError>{error}</FieldError>
     </Field>
   )
@@ -386,9 +458,39 @@ function CheckboxField({
   )
 }
 
+function normalizeMoneyInputValue(value: unknown) {
+  return String(value ?? '').replace(/[^\d.]/g, '')
+}
+
+function formatMoneyInputValue(value: unknown) {
+  const normalizedValue = normalizeMoneyInputValue(value)
+
+  if (normalizedValue === '') {
+    return ''
+  }
+
+  const parsedValue = Number(normalizedValue)
+
+  if (!Number.isFinite(parsedValue)) {
+    return normalizedValue
+  }
+
+  return parsedValue.toFixed(2)
+}
+
+function getCurrencySymbol(currency: string) {
+  const parts = new Intl.NumberFormat('en-US', {
+    currency,
+    style: 'currency',
+  }).formatToParts(0)
+
+  return parts.find((part) => part.type === 'currency')?.value ?? currency
+}
+
 export {
   CheckboxField,
   ControlledCheckboxField,
+  ControlledMoneyInput,
   ControlledRadioCardGroup,
   ControlledSelectInput,
   ControlledTextInput,
