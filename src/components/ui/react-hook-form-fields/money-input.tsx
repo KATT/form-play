@@ -62,8 +62,8 @@ function ControlledMoneyInput<
     return {
       align:
         currencyIndex > numberIndex && numberIndex !== -1
-          ? 'inline-end'
-          : 'inline-start',
+          ? ('inline-end' as const)
+          : ('inline-start' as const),
       value: parts[currencyIndex]?.value ?? currency,
     }
   }, [currency, locale])
