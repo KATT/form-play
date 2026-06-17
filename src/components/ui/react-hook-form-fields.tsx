@@ -2,7 +2,6 @@ import { useId } from 'react'
 import {
   Controller,
   type Control,
-  type FieldErrors,
   type FieldPath,
   type FieldValues,
 } from 'react-hook-form'
@@ -30,9 +29,6 @@ import { cn } from '@/lib/utils'
 
 type FormWithControl<TFieldValues extends FieldValues> = {
   control: Control<TFieldValues>
-  formState: {
-    errors: FieldErrors<TFieldValues>
-  }
 }
 
 type ControlledFieldBase<
@@ -113,16 +109,14 @@ function ControlledTextInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({ form, name, ...props }: ControlledTextInputProps<TFieldValues, TName>) {
-  const error = getFieldError(form.formState.errors, name)
-
   return (
     <Controller
       control={form.control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <TextInput
           {...props}
-          error={error}
+          error={fieldState.error?.message}
           name={field.name}
           value={field.value == null ? '' : String(field.value)}
           onBlur={field.onBlur}
@@ -143,19 +137,18 @@ function ControlledMoneyInput<
   placeholder,
   ...props
 }: ControlledMoneyInputProps<TFieldValues, TName>) {
-  const error = getFieldError(form.formState.errors, name)
   const currencySymbol = getCurrencySymbol(currency)
 
   return (
     <Controller
       control={form.control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <MoneyInput
           {...props}
           currency={currency}
           currencySymbol={currencySymbol}
-          error={error}
+          error={fieldState.error?.message}
           name={field.name}
           placeholder={placeholder ?? `0.00 ${currency}`}
           value={formatCentsAsMajorUnit(field.value)}
@@ -181,16 +174,14 @@ function ControlledSelectInput<
   name,
   ...props
 }: ControlledSelectInputProps<TFieldValues, TName>) {
-  const error = getFieldError(form.formState.errors, name)
-
   return (
     <Controller
       control={form.control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <SelectInput
           {...props}
-          error={error}
+          error={fieldState.error?.message}
           name={field.name}
           value={field.value == null ? '' : String(field.value)}
           onBlur={field.onBlur}
@@ -207,16 +198,14 @@ function ControlledTextareaInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({ form, name, ...props }: ControlledTextareaInputProps<TFieldValues, TName>) {
-  const error = getFieldError(form.formState.errors, name)
-
   return (
     <Controller
       control={form.control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <TextareaInput
           {...props}
-          error={error}
+          error={fieldState.error?.message}
           name={field.name}
           value={field.value == null ? '' : String(field.value)}
           onBlur={field.onBlur}
@@ -236,17 +225,15 @@ function ControlledCheckboxField<
   name,
   ...props
 }: ControlledCheckboxFieldProps<TFieldValues, TName>) {
-  const error = getFieldError(form.formState.errors, name)
-
   return (
     <Controller
       control={form.control}
       name={name}
-      render={({ field }) => (
+      render={({ field, fieldState }) => (
         <CheckboxField
           {...props}
           checked={!!field.value}
-          error={error}
+          error={fieldState.error?.message}
           label={label}
           onCheckedChange={field.onChange}
         />
@@ -265,81 +252,62 @@ function ControlledRadioCardGroup<
   name,
   options,
 }: ControlledRadioCardGroupProps<TFieldValues, TName>) {
-  const error = getFieldError(form.formState.errors, name)
-
   return (
-    <Field data-invalid={!!error}>
+    <Field>
       <FieldLabel>{label}</FieldLabel>
       <Controller
         control={form.control}
         name={name}
-        render={({ field }) => (
-          <RadioGroup
-            aria-invalid={!!error}
-            className={cn('grid gap-4 md:grid-cols-2', className)}
-            value={field.value == null ? '' : String(field.value)}
-            onValueChange={(value) => field.onChange(value)}
-          >
-            {options.map((option) => {
-              const optionId = `${String(name)}-${option.value}`
+        render={({ field, fieldState }) => {
+          const error = fieldState.error?.message
 
-              return (
-                <FieldLabel htmlFor={optionId} key={option.value}>
-                  <Field
-                    data-disabled={option.disabled || undefined}
-                    orientation="horizontal"
-                    className={cn(
-                      'min-h-32 cursor-pointer rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
-                      option.disabled && 'cursor-not-allowed opacity-50',
-                    )}
-                  >
-                    <FieldContent>
-                      <FieldTitle>{option.title}</FieldTitle>
-                      {option.description ? (
-                        <FieldDescription>
-                          {option.description}
-                        </FieldDescription>
-                      ) : null}
-                    </FieldContent>
-                    <RadioGroupItem
-                      disabled={option.disabled}
-                      id={optionId}
-                      value={option.value}
-                    />
-                  </Field>
-                </FieldLabel>
-              )
-            })}
-          </RadioGroup>
-        )}
+          return (
+            <>
+              <RadioGroup
+                aria-invalid={!!error}
+                className={cn('grid gap-4 md:grid-cols-2', className)}
+                value={field.value == null ? '' : String(field.value)}
+                onValueChange={(value) => field.onChange(value)}
+              >
+                {options.map((option) => {
+                  const optionId = `${String(name)}-${option.value}`
+
+                  return (
+                    <FieldLabel htmlFor={optionId} key={option.value}>
+                      <Field
+                        data-disabled={option.disabled || undefined}
+                        orientation="horizontal"
+                        className={cn(
+                          'min-h-32 cursor-pointer rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
+                          option.disabled && 'cursor-not-allowed opacity-50',
+                        )}
+                      >
+                        <FieldContent>
+                          <FieldTitle>{option.title}</FieldTitle>
+                          {option.description ? (
+                            <FieldDescription>
+                              {option.description}
+                            </FieldDescription>
+                          ) : null}
+                        </FieldContent>
+                        <RadioGroupItem
+                          aria-invalid={!!error}
+                          disabled={option.disabled}
+                          id={optionId}
+                          value={option.value}
+                        />
+                      </Field>
+                    </FieldLabel>
+                  )
+                })}
+              </RadioGroup>
+              <FieldError>{error}</FieldError>
+            </>
+          )
+        }}
       />
-      <FieldError>{error}</FieldError>
     </Field>
   )
-}
-
-function getFieldError<TFieldValues extends FieldValues>(
-  errors: FieldErrors<TFieldValues>,
-  name: FieldPath<TFieldValues>,
-) {
-  const fieldError = name.split('.').reduce<unknown>((current, segment) => {
-    if (current && typeof current === 'object') {
-      return (current as Record<string, unknown>)[segment]
-    }
-
-    return undefined
-  }, errors)
-
-  if (
-    fieldError &&
-    typeof fieldError === 'object' &&
-    'message' in fieldError &&
-    typeof fieldError.message === 'string'
-  ) {
-    return fieldError.message
-  }
-
-  return undefined
 }
 
 function TextInput({
