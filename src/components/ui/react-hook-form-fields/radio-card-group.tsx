@@ -65,50 +65,49 @@ function ControlledRadioCardGroup<
               >
                 {options.map((option) => {
                   const optionId = `${String(name)}-${option.value}`
-                  const card = (
-                    <FieldLabel
-                      htmlFor={optionId}
-                      aria-disabled={option.disabled || undefined}
-                      className={cn(
-                        'cursor-pointer',
-                        option.disabled && 'cursor-not-allowed opacity-60',
-                      )}
-                    >
-                      <Field
-                        data-disabled={option.disabled || undefined}
-                        orientation="horizontal"
-                        className={cn(
-                          'min-h-32 rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
-                          option.disabled && 'hover:bg-transparent',
-                        )}
-                      >
-                        <FieldContent>
-                          <FieldTitle>{option.title}</FieldTitle>
-                          {option.description ? (
-                            <FieldDescription>
-                              {option.description}
-                            </FieldDescription>
-                          ) : null}
-                        </FieldContent>
-                        <RadioGroupItem
-                          aria-invalid={!!error}
-                          disabled={option.disabled}
-                          id={optionId}
-                          ref={
-                            option.value === focusValue ? field.ref : undefined
-                          }
-                          value={option.value}
-                        />
-                      </Field>
-                    </FieldLabel>
-                  )
 
                   return (
                     <ConditionalTooltip
                       disabledReason={option.disabledReason}
                       key={option.value}
                     >
-                      {card}
+                      <FieldLabel
+                        htmlFor={optionId}
+                        aria-disabled={option.disabled || undefined}
+                        className={cn(
+                          'cursor-pointer',
+                          option.disabled && 'cursor-not-allowed opacity-60',
+                        )}
+                      >
+                        <Field
+                          data-disabled={option.disabled || undefined}
+                          orientation="horizontal"
+                          className={cn(
+                            'min-h-32 rounded-xl transition-colors hover:bg-accent/50 has-data-checked:ring-1 has-data-checked:ring-ring',
+                            option.disabled && 'hover:bg-transparent',
+                          )}
+                        >
+                          <FieldContent>
+                            <FieldTitle>{option.title}</FieldTitle>
+                            {option.description ? (
+                              <FieldDescription>
+                                {option.description}
+                              </FieldDescription>
+                            ) : null}
+                          </FieldContent>
+                          <RadioGroupItem
+                            aria-invalid={!!error}
+                            disabled={option.disabled}
+                            id={optionId}
+                            ref={
+                              option.value === focusValue
+                                ? field.ref
+                                : undefined
+                            }
+                            value={option.value}
+                          />
+                        </Field>
+                      </FieldLabel>
                     </ConditionalTooltip>
                   )
                 })}
