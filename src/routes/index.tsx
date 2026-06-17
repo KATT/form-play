@@ -28,6 +28,7 @@ import {
 import { ConditionalTooltip } from '@/components/ui/conditional-tooltip'
 import {
   ResolverForm,
+  SubmitButton,
   useResolverForm,
 } from '@/components/ui/react-hook-form-fields/form'
 import { FormConditional } from '@/components/ui/react-hook-form-fields/form-conditional'
@@ -987,9 +988,9 @@ function SubmissionSection({
               Update Endpoint
             </NativeSelectOption>
           </ControlledSelectInput>
-          <Button className="self-end" size="lg" type="submit">
+          <SubmitButton className="self-end" size="lg">
             Transform & Submit
-          </Button>
+          </SubmitButton>
         </div>
       </CardContent>
     </Card>

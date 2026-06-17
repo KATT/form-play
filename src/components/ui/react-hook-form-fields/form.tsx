@@ -12,6 +12,8 @@ import {
   type UseFormReturn,
 } from 'react-hook-form'
 
+import { Button } from '@/components/ui/button'
+
 type UseResolverForm<
   TInput extends FieldValues,
   TOutput,
@@ -94,16 +96,17 @@ function ResolverForm<TInput extends FieldValues, TOutput>(
 }
 
 function SubmitButton(
-  props: Omit<ComponentProps<'button'>, 'form' | 'type'> & {
+  props: Omit<ComponentProps<typeof Button>, 'form' | 'type'> & {
     /**
      * Optionally specify a form to submit instead of the closest form context.
      */
     form?: AnyResolverForm | undefined
   },
 ) {
+  const { children, disabled, form: explicitForm, ...passThrough } = props
   const context = useFormContext()
 
-  const form = props.form ?? context
+  const form = explicitForm ?? context
   if (!form) {
     throw new Error(
       'SubmitButton must be used within a ResolverForm or have a form prop',
@@ -112,14 +115,14 @@ function SubmitButton(
   const { formState } = form
 
   return (
-    <button
-      {...props}
-      form={props.form?.id}
+    <Button
+      {...passThrough}
+      form={explicitForm?.id}
       type="submit"
-      disabled={formState.isSubmitting}
+      disabled={disabled || formState.isSubmitting}
     >
-      {formState.isSubmitting ? 'Loading' : props.children}
-    </button>
+      {formState.isSubmitting ? 'Loading' : children}
+    </Button>
   )
 }
 
