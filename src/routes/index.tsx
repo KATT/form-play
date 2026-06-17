@@ -329,6 +329,7 @@ const billFormSchema = billFormInputSchema.transform((values): ApiSubmission => 
 type BillFormInputValues = z.input<typeof billFormSchema>
 type BillFormSubmission = z.output<typeof billFormSchema>
 type BillForm = UseFormReturn<BillFormInputValues, unknown, BillFormSubmission>
+type RecurrenceInputValues = NonNullable<BillFormInputValues['recurrence']>
 
 function Home() {
   const search = Route.useSearch()
@@ -1060,6 +1061,8 @@ function HighlightedJson({ code }: { code: string }) {
 }
 
 function getNewBillDefaults(): BillFormInputValues {
+  const issueDate = new Date()
+
   return {
     billId: undefined,
     editorMode: 'new',
@@ -1068,8 +1071,8 @@ function getNewBillDefaults(): BillFormInputValues {
     customerName: '',
     customerEmail: '',
     status: 'draft',
-    issueDate: '2026-06-16',
-    dueDate: '2026-06-30',
+    issueDate: getDateInputValue(issueDate),
+    dueDate: getDateInputValue(addDays(issueDate, 14)),
     currency: 'USD',
     lineItems: [getDefaultLineItem()],
     taxRate: '0',
@@ -1109,11 +1112,8 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormInputValues {
         ? 'after_occurrences'
         : 'never'
     const baseRecurrence = {
-      frequency: apiBill.schedule.frequency,
       interval: String(apiBill.schedule.interval),
       startsOn: apiBill.schedule.starts_on,
-      monthlyAnchorDate: '',
-      yearlyAnchorDate: '',
       endStrategy,
       endsOn: apiBill.schedule.ends_on ?? '',
       occurrenceCount:
@@ -1126,25 +1126,29 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormInputValues {
       ...baseDefaults,
       billType: 'repeating',
       dueDate: apiBill.due_date ?? undefined,
-      recurrence:
-        apiBill.schedule.frequency === 'daily' ||
-        apiBill.schedule.frequency === 'weekly'
-          ? {
+      recurrence: (() => {
+        switch (apiBill.schedule.frequency) {
+          case 'daily':
+          case 'weekly':
+            return {
               ...baseRecurrence,
               frequency: apiBill.schedule.frequency,
               weekdays: apiBill.schedule.weekdays,
             }
-          : apiBill.schedule.frequency === 'monthly'
-            ? {
-                ...baseRecurrence,
-                frequency: 'monthly',
-                monthlyAnchorDate: apiBill.schedule.anchor_date,
-              }
-            : {
-                ...baseRecurrence,
-                frequency: 'yearly',
-                yearlyAnchorDate: apiBill.schedule.anchor_date,
-              },
+          case 'monthly':
+            return {
+              ...baseRecurrence,
+              frequency: 'monthly',
+              monthlyAnchorDate: apiBill.schedule.anchor_date,
+            }
+          case 'yearly':
+            return {
+              ...baseRecurrence,
+              frequency: 'yearly',
+              yearlyAnchorDate: apiBill.schedule.anchor_date,
+            }
+        }
+      })(),
     }
   }
 
@@ -1168,18 +1172,53 @@ function getDefaultLineItem(): BillFormInputValues['lineItems'][number] {
   }
 }
 
-function getDefaultRecurrence(): NonNullable<
-  BillFormInputValues['recurrence']
-> {
-  return {
-    frequency: 'monthly',
+function getDefaultRecurrence(
+  frequency: RecurrenceInputValues['frequency'] = 'monthly',
+): RecurrenceInputValues {
+  const startsOn = getDateInputValue(new Date())
+  const baseRecurrence = {
     interval: '1',
-    startsOn: '2026-07-01',
-    monthlyAnchorDate: '2026-07-31',
-    endStrategy: 'never',
+    startsOn,
+    endStrategy: 'never' as const,
     endsOn: '',
     occurrenceCount: undefined,
   }
+
+  switch (frequency) {
+    case 'daily':
+    case 'weekly':
+      return {
+        ...baseRecurrence,
+        frequency,
+        weekdays: ['monday'],
+      }
+    case 'monthly':
+      return {
+        ...baseRecurrence,
+        frequency: 'monthly',
+        monthlyAnchorDate: startsOn,
+      }
+    case 'yearly':
+      return {
+        ...baseRecurrence,
+        frequency: 'yearly',
+        yearlyAnchorDate: startsOn,
+      }
+  }
+}
+
+function addDays(date: Date, days: number) {
+  const nextDate = new Date(date)
+  nextDate.setDate(nextDate.getDate() + days)
+
+  return nextDate
+}
+
+function getDateInputValue(date: Date) {
+  const localDate = new Date(date)
+  localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset())
+
+  return localDate.toISOString().slice(0, 10)
 }
 
 function titleCase(value: string) {
