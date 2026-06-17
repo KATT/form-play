@@ -5,7 +5,13 @@ import jsonLanguage from '@shikijs/langs/json'
 import githubDarkTheme from '@shikijs/themes/github-dark'
 import githubLightTheme from '@shikijs/themes/github-light'
 import { createFileRoute } from '@tanstack/react-router'
-import { Suspense, use, useDeferredValue, useMemo } from 'react'
+import {
+  type ReactNode,
+  Suspense,
+  use,
+  useDeferredValue,
+  useMemo,
+} from 'react'
 import { type UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
@@ -31,7 +37,6 @@ import {
   SubmitButton,
   useResolverForm,
 } from '@/components/ui/react-hook-form-fields/form'
-import { FormConditional } from '@/components/ui/react-hook-form-fields/form-conditional'
 import {
   ControlledCheckboxGroup,
   ControlledCheckboxGroupItem,
@@ -575,6 +580,22 @@ function BillTypeSection({ control }: { control: BillFormControl }) {
     billTypeDisabledReason && billType !== 'repeating'
       ? billTypeDisabledReason
       : undefined
+  let scheduleFields: ReactNode
+
+  switch (billType) {
+    case 'one_off':
+      scheduleFields = <OneOffScheduleFields control={control} />
+      break
+    case 'repeating':
+      scheduleFields = <RepeatingScheduleFields control={control} />
+      break
+    case undefined:
+      scheduleFields = null
+      break
+    default:
+      billType satisfies never
+      scheduleFields = null
+  }
 
   return (
     <Card>
@@ -615,22 +636,7 @@ function BillTypeSection({ control }: { control: BillFormControl }) {
             </ControlledRadioCardGroupItem>
           </ConditionalTooltip>
         </ControlledRadioCardGroup>
-
-        <FormConditional
-          control={control}
-          name="billType"
-          render={(billType) => billType === 'one_off'}
-        >
-          <OneOffScheduleFields control={control} />
-        </FormConditional>
-
-        <FormConditional
-          control={control}
-          name="billType"
-          render={(currentBillType) => currentBillType === 'repeating'}
-        >
-          <RepeatingScheduleFields control={control} />
-        </FormConditional>
+        {scheduleFields}
       </CardContent>
     </Card>
   )
@@ -773,25 +779,23 @@ function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
   }
 }
 function RecurrenceEndFields({ control }: { control: BillFormControl }) {
-  return (
-    <>
-      <FormConditional
-        control={control}
-        name="recurrence.endStrategy"
-        render={(endStrategy) => endStrategy === 'on_date'}
-      >
+  const endStrategy = useWatch({ control, name: 'recurrence.endStrategy' })
+
+  switch (endStrategy) {
+    case 'never':
+    case undefined:
+      return null
+    case 'on_date':
+      return (
         <ControlledTextInput
           control={control}
           label="End date"
           name="recurrence.endsOn"
           type="date"
         />
-      </FormConditional>
-      <FormConditional
-        control={control}
-        name="recurrence.endStrategy"
-        render={(endStrategy) => endStrategy === 'after_occurrences'}
-      >
+      )
+    case 'after_occurrences':
+      return (
         <ControlledTextInput
           control={control}
           label="Occurrences"
@@ -799,9 +803,11 @@ function RecurrenceEndFields({ control }: { control: BillFormControl }) {
           name="recurrence.occurrenceCount"
           type="number"
         />
-      </FormConditional>
-    </>
-  )
+      )
+    default:
+      endStrategy satisfies never
+      return null
+  }
 }
 
 function LineItemsSection({
