@@ -156,6 +156,17 @@ function SubmitButton(
   const isSubmitSuccessful = formState?.isSubmitSuccessful ?? false
   const errorCount = formState ? Object.keys(formState.errors).length : 0
   const hasServerError = !!formState?.errors.root?.server
+  const settledSubmitState = ((): SubmitButtonFeedbackState | undefined => {
+    if (submitCount === 0 || errorCount === 0 && !isSubmitSuccessful) {
+      return undefined
+    }
+
+    if (errorCount === 0) {
+      return 'success'
+    }
+
+    return hasServerError ? 'server-error' : 'input-error'
+  })()
   const submitButtonState = ((): SubmitButtonState => {
     if (isSubmitting) {
       return 'submitting'
@@ -165,64 +176,78 @@ function SubmitButton(
   })()
 
   useEffect(() => {
-    if (isSubmitting) {
+    const resetButtonFeedback = () => {
       setFeedbackState('idle')
+      void buttonAnimationControls.start({
+        rotate: 0,
+        scale: 1,
+        x: 0,
+        y: 0,
+        transition: { duration: 0.2 },
+      })
     }
-  }, [isSubmitting])
 
-  useEffect(() => {
+    if (isSubmitting) {
+      resetButtonFeedback()
+      return
+    }
+
     if (
-      isSubmitting ||
-      submitCount === 0 ||
+      !settledSubmitState ||
       lastSettledSubmitCount.current === submitCount
     ) {
       return
     }
 
-    if (errorCount === 0 && !isSubmitSuccessful) {
-      return
-    }
-
     lastSettledSubmitCount.current = submitCount
+    setFeedbackState(settledSubmitState)
 
-    if (errorCount > 0) {
-      if (hasServerError) {
-        setFeedbackState('server-error')
-        void buttonAnimationControls.start({
-          rotate: [0, -1, 1, -1, 1, 0],
-          scale: [1, 0.98, 1],
-          x: [0, -6, 6, -4, 4, 0],
-          transition: { duration: 0.35 },
-        })
-      } else {
-        setFeedbackState('input-error')
-        void buttonAnimationControls.start({
-          rotate: [0, -1.5, 1.5, 0],
-          scale: [1, 1.02, 1],
-          y: [0, -2, 0],
-          transition: { duration: 0.3 },
-        })
+    void buttonAnimationControls.start((() => {
+      switch (settledSubmitState) {
+        case 'success':
+          return {
+            rotate: 0,
+            scale: 1,
+            x: 0,
+            y: 0,
+            transition: { duration: 0.2 },
+          }
+        case 'input-error':
+          return {
+            rotate: [0, -1.5, 1.5, 0],
+            scale: [1, 1.02, 1],
+            y: [0, -2, 0],
+            transition: { duration: 0.3 },
+          }
+        case 'server-error':
+          return {
+            rotate: [0, -1, 1, -1, 1, 0],
+            scale: [1, 0.98, 1],
+            x: [0, -6, 6, -4, 4, 0],
+            transition: { duration: 0.35 },
+          }
+        case 'idle':
+          return {
+            rotate: 0,
+            scale: 1,
+            x: 0,
+            y: 0,
+            transition: { duration: 0.2 },
+          }
+        default:
+          settledSubmitState satisfies never
+          return {
+            rotate: 0,
+            scale: 1,
+            x: 0,
+            y: 0,
+            transition: { duration: 0.2 },
+          }
       }
-    } else {
-      setFeedbackState('success')
-      void buttonAnimationControls.start({
-        rotate: 0,
-        scale: 1,
-        x: 0,
-        y: 0,
-        transition: { duration: 0.2 },
-      })
-    }
+    })())
 
     const timeout = setTimeout(() => {
-      setFeedbackState('idle')
-      void buttonAnimationControls.start({
-        rotate: 0,
-        scale: 1,
-        x: 0,
-        y: 0,
-        transition: { duration: 0.2 },
-      })
+      resetButtonFeedback()
     }, 1800)
 
     return () => {
@@ -230,10 +255,8 @@ function SubmitButton(
     }
   }, [
     buttonAnimationControls,
-    errorCount,
-    hasServerError,
-    isSubmitSuccessful,
     isSubmitting,
+    settledSubmitState,
     submitCount,
   ])
 
