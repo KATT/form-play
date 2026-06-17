@@ -35,8 +35,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
-  CheckboxField,
   ControlledCheckboxField,
   ControlledMoneyInput,
   ControlledRadioCardGroup,
@@ -753,20 +753,24 @@ function WeekdayPicker({
             return (
               <>
                 {weekdays.map((weekday) => (
-                  <CheckboxField
-                    checked={selectedWeekdays.includes(weekday)}
-                    key={weekday}
-                    label={titleCase(weekday)}
-                    onCheckedChange={(checked) => {
-                      field.onChange(
-                        checked
-                          ? [...selectedWeekdays, weekday]
-                          : selectedWeekdays.filter(
-                              (selectedWeekday) => selectedWeekday !== weekday,
-                            ),
-                      )
-                    }}
-                  />
+                  <Field orientation="horizontal" key={weekday}>
+                    <FieldLabel className="items-center">
+                      <Checkbox
+                        checked={selectedWeekdays.includes(weekday)}
+                        onCheckedChange={(checked) => {
+                          field.onChange(
+                            checked
+                              ? [...selectedWeekdays, weekday]
+                              : selectedWeekdays.filter(
+                                  (selectedWeekday) =>
+                                    selectedWeekday !== weekday,
+                                ),
+                          )
+                        }}
+                      />
+                      {titleCase(weekday)}
+                    </FieldLabel>
+                  </Field>
                 ))}
               </>
             )

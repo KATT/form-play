@@ -482,7 +482,6 @@ function getCurrencySymbol(currency: string) {
 }
 
 export {
-  CheckboxField,
   ControlledCheckboxField,
   ControlledMoneyInput,
   ControlledRadioCardGroup,
