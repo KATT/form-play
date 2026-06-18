@@ -365,7 +365,7 @@ function SubmitButton(
             duration: submitButtonTransitionSeconds,
             ease: 'easeInOut',
           }}
-          whileHover={isSubmitting ? undefined : { y: -1 }}
+          whileHover={submitButtonState === 'idle' ? { y: -1 } : undefined}
           whileTap={isSubmitting ? undefined : { scale: 0.98 }}
         />
       }
