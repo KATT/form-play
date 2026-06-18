@@ -212,9 +212,10 @@ function SubmitButton(
   const submitButtonMotion = (() => {
     switch (submitButtonState) {
       case 'idle':
-      case 'submitting':
       case 'success':
         return { rotate: 0, scale: 1, x: 0, y: 0 }
+      case 'submitting':
+        return { rotate: 0, scale: 0.98, x: 0, y: -1 }
       case 'input-error':
         return {
           rotate: [0, -1.5, 1.5, 0],
