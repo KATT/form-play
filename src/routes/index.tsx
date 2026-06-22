@@ -604,9 +604,7 @@ function BillTypeSection({
       scheduleFields = <OneOffScheduleFields field={field} />
       break
     case 'repeating':
-      scheduleFields = (
-        <RepeatingScheduleFields control={control} field={field} />
-      )
+      scheduleFields = <RepeatingScheduleFields field={field} />
       break
     case undefined:
       scheduleFields = null
@@ -681,13 +679,7 @@ function OneOffScheduleFields({ field }: { field: BillFormField }) {
   )
 }
 
-function RepeatingScheduleFields({
-  control,
-  field,
-}: {
-  control: BillFormControl
-  field: BillFormField
-}) {
+function RepeatingScheduleFields({ field }: { field: BillFormField }) {
   return (
     <Card className="mt-5">
       <CardContent>
@@ -718,7 +710,7 @@ function RepeatingScheduleFields({
             label="Starts on"
             type="date"
           />
-          <RecurrenceFrequencyFields control={control} field={field} />
+          <RecurrenceFrequencyFields field={field} />
           <ControlledSelectInput
             field={field('recurrence.endStrategy')}
             label="Ends"
@@ -729,21 +721,15 @@ function RepeatingScheduleFields({
               After occurrences
             </NativeSelectOption>
           </ControlledSelectInput>
-          <RecurrenceEndFields control={control} field={field} />
+          <RecurrenceEndFields field={field} />
         </FieldGroup>
       </CardContent>
     </Card>
   )
 }
 
-function RecurrenceFrequencyFields({
-  control,
-  field,
-}: {
-  control: BillFormControl
-  field: BillFormField
-}) {
-  const frequency = useWatch({ control, name: 'recurrence.frequency' })
+function RecurrenceFrequencyFields({ field }: { field: BillFormField }) {
+  const frequency = useWatch(field('recurrence.frequency'))
 
   switch (frequency) {
     case 'daily':
@@ -798,14 +784,8 @@ function RecurrenceFrequencyFields({
       return null
   }
 }
-function RecurrenceEndFields({
-  control,
-  field,
-}: {
-  control: BillFormControl
-  field: BillFormField
-}) {
-  const endStrategy = useWatch({ control, name: 'recurrence.endStrategy' })
+function RecurrenceEndFields({ field }: { field: BillFormField }) {
+  const endStrategy = useWatch(field('recurrence.endStrategy'))
 
   switch (endStrategy) {
     case 'never':
