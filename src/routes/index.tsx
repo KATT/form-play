@@ -161,18 +161,31 @@ const currencyAmountSchema = createCurrencyAmountSchema(
     .min(0, 'Unit price cannot be negative'),
 )
 
-const lineItemSchema = z.object({
+const lineItemInputSchema = z.object({
   id: z.string().optional(),
+  description: z.string(),
+  quantity: z.string(),
+  unitAmountCents: z.string(),
+  taxable: z.boolean(),
+})
+const lineItemSchema = lineItemInputSchema.extend({
   description: z.string().min(1, 'Add a description'),
   quantity: requiredNumberInput('Quantity is required').pipe(
     z.number().min(1, 'Quantity must be at least 1'),
   ),
   unitAmountCents: currencyAmountSchema,
-  taxable: z.boolean(),
 })
 const lineItemsSchema = z
-  .array(lineItemSchema)
-  .min(1, 'Add at least one line item')
+  .array(lineItemInputSchema)
+  .transform((lineItems) =>
+    lineItems.filter(
+      (lineItem) =>
+        lineItem.description.trim() !== '' ||
+        String(lineItem.quantity).trim() !== '' ||
+        lineItem.unitAmountCents.trim() !== '',
+    ),
+  )
+  .pipe(z.array(lineItemSchema))
 const taxRateSchema = requiredNumberInput('Tax rate is required').pipe(
   z.number().min(0).max(100, 'Tax rate cannot exceed 100%'),
 )
@@ -1337,9 +1350,9 @@ const editBillDefaultValues = getBillDefaultsFromApi(sampleApiBill)
 function getDefaultLineItem(): BillFormInputValues['lineItems'][number] {
   return {
     description: '',
-    quantity: '1',
-    unitAmountCents: z.encode(currencyAmountSchema, 0),
-    taxable: true,
+    quantity: '',
+    unitAmountCents: '',
+    taxable: false,
   }
 }
 
