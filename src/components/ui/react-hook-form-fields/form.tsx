@@ -215,7 +215,7 @@ function SubmitButton(
       case 'success':
         return { rotate: 0, scale: 1, x: 0, y: 0 }
       case 'submitting':
-        return { rotate: 0, scale: 0.98, x: 0, y: -1 }
+        return { rotate: 0, scale: 0.98, x: 0, y: 0 }
       case 'input-error':
         return {
           rotate: [0, -1.5, 1.5, 0],
@@ -365,7 +365,7 @@ function SubmitButton(
             duration: submitButtonTransitionSeconds,
             ease: 'easeInOut',
           }}
-          whileHover={submitButtonState === 'idle' ? { y: -1 } : undefined}
+          whileHover={submitButtonState === 'idle' ? { scale: 1.01 } : undefined}
           whileTap={isSubmitting ? undefined : { scale: 0.98 }}
         />
       }
