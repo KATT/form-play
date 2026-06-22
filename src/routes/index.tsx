@@ -921,10 +921,12 @@ function PaymentNotesSection({ field }: { field: BillFormField }) {
             step="0.01"
             type="number"
           />
-          <CheckboxField
-            field={field('collectPaymentAutomatically')}
-            label="Collect payment automatically"
-          />
+          <div className="self-end">
+            <CheckboxField
+              field={field('collectPaymentAutomatically')}
+              label="Collect payment automatically"
+            />
+          </div>
         </FieldGroup>
         <TextareaField
           className="mt-4"
