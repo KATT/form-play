@@ -34,7 +34,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from '@/components/ui/card'
 import { ConditionalTooltip } from '@/components/ui/conditional-tooltip'
 import {
@@ -563,12 +562,9 @@ function UpsertBillForm({
 function BillDetailsSection({ field }: { field: BillFormField }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Bill Details</CardTitle>
-      </CardHeader>
       <CardContent>
         <FieldSet>
-          <FieldLegend className="sr-only">Bill details</FieldLegend>
+          <FieldLegend>Bill details</FieldLegend>
           <FieldGroup className="grid gap-4 md:grid-cols-2">
             <TextInputField
               field={field('customerName')}
@@ -643,12 +639,9 @@ function BillTypeSection({ field }: { field: BillFormField }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Bill Schedule</CardTitle>
-      </CardHeader>
       <CardContent>
         <FieldSet>
-          <FieldLegend className="sr-only">Bill schedule</FieldLegend>
+          <FieldLegend>Bill schedule</FieldLegend>
           <RadioCardGroupField
             field={field('billType')}
             label="Bill type"
@@ -862,12 +855,9 @@ function LineItemsSection({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Line Items</CardTitle>
-      </CardHeader>
       <CardContent>
         <FieldSet>
-          <FieldLegend className="sr-only">Line items</FieldLegend>
+          <FieldLegend>Line items</FieldLegend>
           <div className="flex flex-col gap-4">
             {fields.map((lineItemField, index) => (
               <Card key={lineItemField.id}>
@@ -926,12 +916,9 @@ function LineItemsSection({
 function PaymentNotesSection({ field }: { field: BillFormField }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Payment & Notes</CardTitle>
-      </CardHeader>
       <CardContent>
         <FieldSet>
-          <FieldLegend className="sr-only">Payment and notes</FieldLegend>
+          <FieldLegend>Payment and notes</FieldLegend>
           <FieldGroup className="grid gap-4 md:grid-cols-2">
             <TextInputField
               field={field('taxRate')}
@@ -1069,7 +1056,7 @@ function CodePreviewCard({ title, value }: { title: string; value: unknown }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <h2 className="font-semibold">{title}</h2>
         <CardDescription>Live JSON preview</CardDescription>
         <CardAction>
           <Button
