@@ -179,14 +179,18 @@ const lineItemSchema = lineItemInputSchema.extend({
 })
 const lineItemsSchema = z
   .array(lineItemInputSchema)
-  .transform((lineItems) =>
-    lineItems.filter(
+  .transform((lineItems) => {
+    if (lineItems.length === 1) {
+      return lineItems
+    }
+
+    return lineItems.filter(
       (lineItem) =>
         lineItem.description.trim() !== '' ||
         String(lineItem.quantity).trim() !== '' ||
         lineItem.unitAmountCents.trim() !== '',
-    ),
-  )
+    )
+  })
   .pipe(z.array(lineItemSchema).min(1, 'Add at least one line item'))
 const taxRateSchema = requiredNumberInput('Tax rate is required').pipe(
   z.number().min(0).max(100, 'Tax rate cannot exceed 100%'),
