@@ -874,7 +874,7 @@ function LineItemsSection({
                   min={0}
                   step="0.01"
                 />
-                <div className="flex items-end gap-3">
+                <div className="flex items-center gap-3 self-end">
                   <CheckboxField
                     field={field(`lineItems.${index}.taxable`)}
                     label="Taxable"
