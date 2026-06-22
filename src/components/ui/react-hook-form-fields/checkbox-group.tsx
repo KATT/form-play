@@ -9,7 +9,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field'
-import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
+import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/_types'
 
 interface CheckboxGroupContextValue {
   error: boolean
@@ -22,17 +22,17 @@ const CheckboxGroupContext = createContext<
   CheckboxGroupContextValue | undefined
 >(undefined)
 
-interface ControlledCheckboxGroupProps<
+interface CheckboxGroupFieldProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-> extends ControlledFieldBase<TFieldValues, TName> {
+> extends FieldComponentBase<TFieldValues, TName> {
   children: React.ReactNode
   className: string | undefined
   description: React.ReactNode | undefined
   optionsClassName: string | undefined
 }
 
-function ControlledCheckboxGroup<
+function CheckboxGroupField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({
@@ -42,7 +42,7 @@ function ControlledCheckboxGroup<
   field: controlledField,
   label,
   optionsClassName,
-}: ControlledCheckboxGroupProps<TFieldValues, TName>) {
+}: CheckboxGroupFieldProps<TFieldValues, TName>) {
   return (
     <Controller
       control={controlledField.control}
@@ -77,15 +77,15 @@ function ControlledCheckboxGroup<
   )
 }
 
-interface ControlledCheckboxGroupItemProps {
+interface CheckboxGroupFieldItemProps {
   children: React.ReactNode
   value: string
 }
 
-function ControlledCheckboxGroupItem({
+function CheckboxGroupFieldItem({
   children,
   value,
-}: ControlledCheckboxGroupItemProps) {
+}: CheckboxGroupFieldItemProps) {
   const { error, fieldRef, selectedValues, setSelectedValues } =
     useCheckboxGroupContext()
 
@@ -117,11 +117,11 @@ function useCheckboxGroupContext() {
 
   if (!context) {
     throw new Error(
-      'ControlledCheckboxGroupItem must be used inside ControlledCheckboxGroup.',
+      'CheckboxGroupFieldItem must be used inside CheckboxGroupField.',
     )
   }
 
   return context
 }
 
-export { ControlledCheckboxGroup, ControlledCheckboxGroupItem }
+export { CheckboxGroupField, CheckboxGroupFieldItem }

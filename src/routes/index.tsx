@@ -40,21 +40,21 @@ import {
   useResolverForm,
 } from '@/components/ui/react-hook-form-fields/form'
 import {
-  ControlledCheckboxGroup,
-  ControlledCheckboxGroupItem,
+  CheckboxGroupField,
+  CheckboxGroupFieldItem,
 } from '@/components/ui/react-hook-form-fields/checkbox-group'
-import { ControlledCheckboxField } from '@/components/ui/react-hook-form-fields/checkbox-field'
+import { CheckboxField } from '@/components/ui/react-hook-form-fields/checkbox-field'
 import {
-  ControlledMoneyInput,
   createCurrencyAmountSchema,
+  MoneyInputField,
 } from '@/components/ui/react-hook-form-fields/money-input'
 import {
-  ControlledRadioCardGroup,
-  ControlledRadioCardGroupItem,
+  RadioCardGroupField,
+  RadioCardGroupFieldItem,
 } from '@/components/ui/react-hook-form-fields/radio-card-group'
-import { ControlledSelectInput } from '@/components/ui/react-hook-form-fields/select-input'
-import { ControlledTextInput } from '@/components/ui/react-hook-form-fields/text-input'
-import { ControlledTextareaInput } from '@/components/ui/react-hook-form-fields/textarea-input'
+import { SelectField } from '@/components/ui/react-hook-form-fields/select-input'
+import { TextInputField } from '@/components/ui/react-hook-form-fields/text-input'
+import { TextareaField } from '@/components/ui/react-hook-form-fields/textarea-input'
 import {
   FieldContent,
   FieldDescription,
@@ -529,19 +529,19 @@ function BillDetailsSection({ field }: { field: BillFormField }) {
       </CardHeader>
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
-          <ControlledTextInput
+          <TextInputField
             field={field('customerName')}
             label="Customer name"
             autoComplete="organization"
           />
-          <ControlledTextInput
+          <TextInputField
             field={field('customerEmail')}
             label="Customer email"
             autoComplete="email"
             spellCheck={false}
             type="email"
           />
-          <ControlledSelectInput
+          <SelectField
             field={field('status')}
             label="Status"
           >
@@ -550,8 +550,8 @@ function BillDetailsSection({ field }: { field: BillFormField }) {
                 {titleCase(status)}
               </NativeSelectOption>
             ))}
-          </ControlledSelectInput>
-          <ControlledSelectInput
+          </SelectField>
+          <SelectField
             field={field('currency')}
             label="Currency"
           >
@@ -560,7 +560,7 @@ function BillDetailsSection({ field }: { field: BillFormField }) {
                 {currency}
               </NativeSelectOption>
             ))}
-          </ControlledSelectInput>
+          </SelectField>
         </FieldGroup>
       </CardContent>
     </Card>
@@ -605,12 +605,12 @@ function BillTypeSection({ field }: { field: BillFormField }) {
         <CardTitle>Bill Schedule</CardTitle>
       </CardHeader>
       <CardContent>
-        <ControlledRadioCardGroup
+        <RadioCardGroupField
           field={field('billType')}
           label="Bill type"
         >
           <ConditionalTooltip disabledReason={oneOffDisabledReason}>
-            <ControlledRadioCardGroupItem
+            <RadioCardGroupFieldItem
               disabled={!!oneOffDisabledReason}
               value="one_off"
             >
@@ -620,10 +620,10 @@ function BillTypeSection({ field }: { field: BillFormField }) {
                   Collect this bill once with a fixed due date.
                 </FieldDescription>
               </FieldContent>
-            </ControlledRadioCardGroupItem>
+            </RadioCardGroupFieldItem>
           </ConditionalTooltip>
           <ConditionalTooltip disabledReason={repeatingDisabledReason}>
-            <ControlledRadioCardGroupItem
+            <RadioCardGroupFieldItem
               disabled={!!repeatingDisabledReason}
               value="repeating"
             >
@@ -634,9 +634,9 @@ function BillTypeSection({ field }: { field: BillFormField }) {
                   cadence.
                 </FieldDescription>
               </FieldContent>
-            </ControlledRadioCardGroupItem>
+            </RadioCardGroupFieldItem>
           </ConditionalTooltip>
-        </ControlledRadioCardGroup>
+        </RadioCardGroupField>
         {scheduleFields}
       </CardContent>
     </Card>
@@ -648,12 +648,12 @@ function OneOffScheduleFields({ field }: { field: BillFormField }) {
     <Card className="mt-5">
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
-          <ControlledTextInput
+          <TextInputField
             field={field('issueDate')}
             label="Issue date"
             type="date"
           />
-          <ControlledTextInput
+          <TextInputField
             field={field('dueDate')}
             label="Due date"
             type="date"
@@ -669,12 +669,12 @@ function RepeatingScheduleFields({ field }: { field: BillFormField }) {
     <Card className="mt-5">
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
-          <ControlledTextInput
+          <TextInputField
             field={field('issueDate')}
             label="First issue date"
             type="date"
           />
-          <ControlledSelectInput
+          <SelectField
             field={field('recurrence.frequency')}
             label="Frequency"
           >
@@ -683,20 +683,20 @@ function RepeatingScheduleFields({ field }: { field: BillFormField }) {
                 {titleCase(frequency)}
               </NativeSelectOption>
             ))}
-          </ControlledSelectInput>
-          <ControlledTextInput
+          </SelectField>
+          <TextInputField
             field={field('recurrence.interval')}
             label="Every"
             min={1}
             type="number"
           />
-          <ControlledTextInput
+          <TextInputField
             field={field('recurrence.startsOn')}
             label="Starts on"
             type="date"
           />
           <RecurrenceFrequencyFields field={field} />
-          <ControlledSelectInput
+          <SelectField
             field={field('recurrence.endStrategy')}
             label="Ends"
           >
@@ -705,7 +705,7 @@ function RepeatingScheduleFields({ field }: { field: BillFormField }) {
             <NativeSelectOption value="after_occurrences">
               After occurrences
             </NativeSelectOption>
-          </ControlledSelectInput>
+          </SelectField>
           <RecurrenceEndFields field={field} />
         </FieldGroup>
       </CardContent>
@@ -720,7 +720,7 @@ function RecurrenceFrequencyFields({ field }: { field: BillFormField }) {
     case 'daily':
     case 'weekly':
       return (
-        <ControlledCheckboxGroup
+        <CheckboxGroupField
           className="md:col-span-2"
           description="Choose which weekdays should generate an occurrence."
           field={field('recurrence.weekdays')}
@@ -728,16 +728,16 @@ function RecurrenceFrequencyFields({ field }: { field: BillFormField }) {
           optionsClassName="grid grid-cols-2 gap-3 sm:grid-cols-4"
         >
           {weekdays.map((weekday) => (
-            <ControlledCheckboxGroupItem key={weekday} value={weekday}>
+            <CheckboxGroupFieldItem key={weekday} value={weekday}>
               {titleCase(weekday)}
-            </ControlledCheckboxGroupItem>
+            </CheckboxGroupFieldItem>
           ))}
-        </ControlledCheckboxGroup>
+        </CheckboxGroupField>
       )
     case 'monthly':
       return (
         <>
-          <ControlledTextInput
+          <TextInputField
             field={field('recurrence.monthlyAnchorDate')}
             label="Monthly anchor date"
             type="date"
@@ -751,7 +751,7 @@ function RecurrenceFrequencyFields({ field }: { field: BillFormField }) {
     case 'yearly':
       return (
         <>
-          <ControlledTextInput
+          <TextInputField
             field={field('recurrence.yearlyAnchorDate')}
             label="Yearly anchor date"
             type="date"
@@ -778,7 +778,7 @@ function RecurrenceEndFields({ field }: { field: BillFormField }) {
       return null
     case 'on_date':
       return (
-        <ControlledTextInput
+        <TextInputField
           field={field('recurrence.endsOn')}
           label="End date"
           type="date"
@@ -786,7 +786,7 @@ function RecurrenceEndFields({ field }: { field: BillFormField }) {
       )
     case 'after_occurrences':
       return (
-        <ControlledTextInput
+        <TextInputField
           field={field('recurrence.occurrenceCount')}
           label="Occurrences"
           min={2}
@@ -819,17 +819,17 @@ function LineItemsSection({
           {fields.map((lineItemField, index) => (
             <Card key={lineItemField.id}>
               <CardContent className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]">
-                <ControlledTextInput
+                <TextInputField
                   field={field(`lineItems.${index}.description`)}
                   label="Description"
                 />
-                <ControlledTextInput
+                <TextInputField
                   field={field(`lineItems.${index}.quantity`)}
                   label="Qty"
                   min={1}
                   type="number"
                 />
-                <ControlledMoneyInput
+                <MoneyInputField
                   currency={currency}
                   field={field(`lineItems.${index}.unitAmountCents`)}
                   label="Unit price"
@@ -838,7 +838,7 @@ function LineItemsSection({
                   step="0.01"
                 />
                 <div className="flex items-end gap-3">
-                  <ControlledCheckboxField
+                  <CheckboxField
                     field={field(`lineItems.${index}.taxable`)}
                     label="Taxable"
                   />
@@ -877,19 +877,19 @@ function PaymentNotesSection({ field }: { field: BillFormField }) {
       </CardHeader>
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
-          <ControlledTextInput
+          <TextInputField
             field={field('taxRate')}
             label="Tax rate (%)"
             min={0}
             step="0.01"
             type="number"
           />
-          <ControlledCheckboxField
+          <CheckboxField
             field={field('collectPaymentAutomatically')}
             label="Collect payment automatically"
           />
         </FieldGroup>
-        <ControlledTextareaInput
+        <TextareaField
           className="mt-4"
           field={field('memo')}
           label="Memo"
@@ -962,7 +962,7 @@ function SubmissionSection({
           )}
         </div>
         <div className="flex flex-wrap gap-3">
-          <ControlledSelectInput
+          <SelectField
             field={field('submitIntent')}
             label="Submit as"
           >
@@ -972,7 +972,7 @@ function SubmissionSection({
             <NativeSelectOption value="update">
               Update Endpoint
             </NativeSelectOption>
-          </ControlledSelectInput>
+          </SelectField>
           <SubmitButton
             className="self-end"
             icon={FileCheckIcon}

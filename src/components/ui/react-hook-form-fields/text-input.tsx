@@ -3,9 +3,9 @@ import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
+import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/_types'
 
-interface ControlledTextInputProps<
+interface TextInputFieldProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >
@@ -14,16 +14,16 @@ interface ControlledTextInputProps<
       React.InputHTMLAttributes<HTMLInputElement>,
       'defaultValue' | 'form' | 'id' | 'name' | 'onBlur' | 'onChange' | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName> {}
+    FieldComponentBase<TFieldValues, TName> {}
 
-function ControlledTextInput<
+function TextInputField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({
   field: controlledField,
   label,
   ...props
-}: ControlledTextInputProps<TFieldValues, TName>) {
+}: TextInputFieldProps<TFieldValues, TName>) {
   const inputId = useId()
 
   return (
@@ -54,4 +54,4 @@ function ControlledTextInput<
   )
 }
 
-export { ControlledTextInput }
+export { TextInputField }

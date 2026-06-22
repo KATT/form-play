@@ -8,7 +8,7 @@ interface FormField<
   name: TName
 }
 
-interface ControlledFieldBase<
+interface FieldComponentBase<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 > {
@@ -16,4 +16,4 @@ interface ControlledFieldBase<
   label: string
 }
 
-export type { ControlledFieldBase, FormField }
+export type { FieldComponentBase, FormField }

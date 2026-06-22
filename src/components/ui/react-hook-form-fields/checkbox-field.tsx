@@ -2,9 +2,9 @@ import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
+import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/_types'
 
-interface ControlledCheckboxFieldProps<
+interface CheckboxFieldProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >
@@ -18,16 +18,16 @@ interface ControlledCheckboxFieldProps<
       | 'onBlur'
       | 'onCheckedChange'
     >,
-    ControlledFieldBase<TFieldValues, TName> {}
+    FieldComponentBase<TFieldValues, TName> {}
 
-function ControlledCheckboxField<
+function CheckboxField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({
   field: controlledField,
   label,
   ...props
-}: ControlledCheckboxFieldProps<TFieldValues, TName>) {
+}: CheckboxFieldProps<TFieldValues, TName>) {
   return (
     <Controller
       control={controlledField.control}
@@ -55,4 +55,4 @@ function ControlledCheckboxField<
   )
 }
 
-export { ControlledCheckboxField }
+export { CheckboxField }

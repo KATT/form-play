@@ -3,9 +3,9 @@ import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { NativeSelect } from '@/components/ui/native-select'
-import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
+import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/_types'
 
-interface ControlledSelectInputProps<
+interface SelectFieldProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >
@@ -21,11 +21,11 @@ interface ControlledSelectInputProps<
       | 'size'
       | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName> {
+    FieldComponentBase<TFieldValues, TName> {
   children: React.ReactNode
 }
 
-function ControlledSelectInput<
+function SelectField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({
@@ -33,7 +33,7 @@ function ControlledSelectInput<
   field: controlledField,
   label,
   ...props
-}: ControlledSelectInputProps<TFieldValues, TName>) {
+}: SelectFieldProps<TFieldValues, TName>) {
   const selectId = useId()
 
   return (
@@ -67,4 +67,4 @@ function ControlledSelectInput<
   )
 }
 
-export { ControlledSelectInput }
+export { SelectField }

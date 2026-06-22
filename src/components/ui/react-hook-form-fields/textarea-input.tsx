@@ -2,10 +2,10 @@ import { useId } from 'react'
 import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
+import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/_types'
 import { Textarea } from '@/components/ui/textarea'
 
-interface ControlledTextareaInputProps<
+interface TextareaFieldProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >
@@ -14,11 +14,11 @@ interface ControlledTextareaInputProps<
       React.TextareaHTMLAttributes<HTMLTextAreaElement>,
       'defaultValue' | 'form' | 'id' | 'name' | 'onBlur' | 'onChange' | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName> {
+    FieldComponentBase<TFieldValues, TName> {
   className?: string
 }
 
-function ControlledTextareaInput<
+function TextareaField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({
@@ -26,7 +26,7 @@ function ControlledTextareaInput<
   field: controlledField,
   label,
   ...props
-}: ControlledTextareaInputProps<TFieldValues, TName>) {
+}: TextareaFieldProps<TFieldValues, TName>) {
   const textareaId = useId()
 
   return (
@@ -57,4 +57,4 @@ function ControlledTextareaInput<
   )
 }
 
-export { ControlledTextareaInput }
+export { TextareaField }

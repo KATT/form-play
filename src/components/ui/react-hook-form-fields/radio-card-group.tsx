@@ -7,7 +7,7 @@ import {
   FieldLabel,
 } from '@/components/ui/field'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
+import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/_types'
 import { cn } from '@/lib/utils'
 
 interface RadioCardGroupContextValue {
@@ -20,15 +20,15 @@ const RadioCardGroupContext = createContext<
   RadioCardGroupContextValue | undefined
 >(undefined)
 
-interface ControlledRadioCardGroupProps<
+interface RadioCardGroupFieldProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-> extends ControlledFieldBase<TFieldValues, TName> {
+> extends FieldComponentBase<TFieldValues, TName> {
   children: React.ReactNode
   className?: string
 }
 
-function ControlledRadioCardGroup<
+function RadioCardGroupField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({
@@ -36,7 +36,7 @@ function ControlledRadioCardGroup<
   className,
   field: controlledField,
   label,
-}: ControlledRadioCardGroupProps<TFieldValues, TName>) {
+}: RadioCardGroupFieldProps<TFieldValues, TName>) {
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
@@ -74,19 +74,19 @@ function ControlledRadioCardGroup<
   )
 }
 
-interface ControlledRadioCardGroupItemProps {
+interface RadioCardGroupFieldItemProps {
   children: React.ReactNode
   className?: string
   disabled?: boolean
   value: string
 }
 
-function ControlledRadioCardGroupItem({
+function RadioCardGroupFieldItem({
   children,
   className,
   disabled,
   value,
-}: ControlledRadioCardGroupItemProps) {
+}: RadioCardGroupFieldItemProps) {
   const { error, fieldRef, selectedValue } = useRadioCardGroupContext()
   const optionId = useId()
 
@@ -130,11 +130,11 @@ function useRadioCardGroupContext() {
 
   if (!context) {
     throw new Error(
-      'ControlledRadioCardGroupItem must be used inside ControlledRadioCardGroup.',
+      'RadioCardGroupFieldItem must be used inside RadioCardGroupField.',
     )
   }
 
   return context
 }
 
-export { ControlledRadioCardGroup, ControlledRadioCardGroupItem }
+export { RadioCardGroupField, RadioCardGroupFieldItem }

@@ -9,11 +9,11 @@ import {
   InputGroupInput,
   InputGroupText,
 } from '@/components/ui/input-group'
-import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields/_types'
+import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/_types'
 
 const currencyAmountInputPattern = /^\d+(\.\d{1,2})?$/
 
-interface ControlledMoneyInputProps<
+interface MoneyInputFieldProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >
@@ -30,12 +30,12 @@ interface ControlledMoneyInputProps<
       | 'type'
       | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName> {
+    FieldComponentBase<TFieldValues, TName> {
   currency: string
   locale: string
 }
 
-function ControlledMoneyInput<
+function MoneyInputField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({
@@ -45,7 +45,7 @@ function ControlledMoneyInput<
   locale,
   placeholder,
   ...props
-}: ControlledMoneyInputProps<TFieldValues, TName>) {
+}: MoneyInputFieldProps<TFieldValues, TName>) {
   const currencyAdornment = useMemo(() => {
     const parts = new Intl.NumberFormat(locale, {
       currency,
@@ -167,7 +167,7 @@ function formatCurrencyAmountCents(value: number) {
 }
 
 export {
-  ControlledMoneyInput,
   createCurrencyAmountSchema,
+  MoneyInputField,
   parseCurrencyAmountInput,
 }
