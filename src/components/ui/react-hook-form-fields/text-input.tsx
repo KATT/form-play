@@ -1,29 +1,23 @@
 import { useId } from 'react'
-import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
+import { Controller, type FieldValues } from 'react-hook-form'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/_types'
 
-interface TextInputFieldProps<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->
+interface TextInputFieldProps<TFieldValues extends FieldValues>
   extends
     Omit<
       React.InputHTMLAttributes<HTMLInputElement>,
       'defaultValue' | 'form' | 'id' | 'name' | 'onBlur' | 'onChange' | 'value'
     >,
-    FieldComponentBase<TFieldValues, TName> {}
+    FieldComponentBase<TFieldValues> {}
 
-function TextInputField<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({
+function TextInputField<TFieldValues extends FieldValues>({
   field,
   label,
   ...props
-}: TextInputFieldProps<TFieldValues, TName>) {
+}: TextInputFieldProps<TFieldValues>) {
   const inputId = useId()
 
   return (

@@ -8,12 +8,14 @@ interface FormField<
   name: TName
 }
 
-interface FieldComponentBase<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
-> {
-  field: FormField<TFieldValues, TName>
+type AnyFormField<TFieldValues extends FieldValues> = FormField<
+  TFieldValues,
+  FieldPath<TFieldValues>
+>
+
+interface FieldComponentBase<TFieldValues extends FieldValues> {
+  field: AnyFormField<TFieldValues>
   label: string
 }
 
-export type { FieldComponentBase, FormField }
+export type { AnyFormField, FieldComponentBase, FormField }

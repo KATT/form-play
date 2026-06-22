@@ -1,5 +1,5 @@
 import { createContext, useContext, useId } from 'react'
-import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
+import { Controller, type FieldValues } from 'react-hook-form'
 
 import {
   Field,
@@ -20,23 +20,18 @@ const RadioCardGroupContext = createContext<
   RadioCardGroupContextValue | undefined
 >(undefined)
 
-interface RadioCardGroupFieldProps<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
-> extends FieldComponentBase<TFieldValues, TName> {
+interface RadioCardGroupFieldProps<TFieldValues extends FieldValues>
+  extends FieldComponentBase<TFieldValues> {
   children: React.ReactNode
   className?: string
 }
 
-function RadioCardGroupField<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({
+function RadioCardGroupField<TFieldValues extends FieldValues>({
   children,
   className,
   field,
   label,
-}: RadioCardGroupFieldProps<TFieldValues, TName>) {
+}: RadioCardGroupFieldProps<TFieldValues>) {
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>

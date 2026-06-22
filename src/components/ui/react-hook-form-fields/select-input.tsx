@@ -1,14 +1,11 @@
 import { useId } from 'react'
-import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
+import { Controller, type FieldValues } from 'react-hook-form'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { NativeSelect } from '@/components/ui/native-select'
 import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/_types'
 
-interface SelectFieldProps<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->
+interface SelectFieldProps<TFieldValues extends FieldValues>
   extends
     Omit<
       React.SelectHTMLAttributes<HTMLSelectElement>,
@@ -21,19 +18,16 @@ interface SelectFieldProps<
       | 'size'
       | 'value'
     >,
-    FieldComponentBase<TFieldValues, TName> {
+    FieldComponentBase<TFieldValues> {
   children: React.ReactNode
 }
 
-function SelectField<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({
+function SelectField<TFieldValues extends FieldValues>({
   children,
   field,
   label,
   ...props
-}: SelectFieldProps<TFieldValues, TName>) {
+}: SelectFieldProps<TFieldValues>) {
   const selectId = useId()
 
   return (

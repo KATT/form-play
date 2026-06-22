@@ -1,5 +1,5 @@
 import { useId, useMemo } from 'react'
-import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
+import { Controller, type FieldValues } from 'react-hook-form'
 import { z } from 'zod'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -13,10 +13,7 @@ import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/
 
 const currencyAmountInputPattern = /^\d+(\.\d{1,2})?$/
 
-interface MoneyInputFieldProps<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->
+interface MoneyInputFieldProps<TFieldValues extends FieldValues>
   extends
     Omit<
       React.InputHTMLAttributes<HTMLInputElement>,
@@ -30,22 +27,19 @@ interface MoneyInputFieldProps<
       | 'type'
       | 'value'
     >,
-    FieldComponentBase<TFieldValues, TName> {
+    FieldComponentBase<TFieldValues> {
   currency: string
   locale: string
 }
 
-function MoneyInputField<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({
+function MoneyInputField<TFieldValues extends FieldValues>({
   currency,
   field,
   label,
   locale,
   placeholder,
   ...props
-}: MoneyInputFieldProps<TFieldValues, TName>) {
+}: MoneyInputFieldProps<TFieldValues>) {
   const currencyAdornment = useMemo(() => {
     const parts = new Intl.NumberFormat(locale, {
       currency,

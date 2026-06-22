@@ -1,32 +1,26 @@
 import { useId } from 'react'
-import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
+import { Controller, type FieldValues } from 'react-hook-form'
 
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import type { FieldComponentBase } from '@/components/ui/react-hook-form-fields/_types'
 import { Textarea } from '@/components/ui/textarea'
 
-interface TextareaFieldProps<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->
+interface TextareaFieldProps<TFieldValues extends FieldValues>
   extends
     Omit<
       React.TextareaHTMLAttributes<HTMLTextAreaElement>,
       'defaultValue' | 'form' | 'id' | 'name' | 'onBlur' | 'onChange' | 'value'
     >,
-    FieldComponentBase<TFieldValues, TName> {
+    FieldComponentBase<TFieldValues> {
   className?: string
 }
 
-function TextareaField<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({
+function TextareaField<TFieldValues extends FieldValues>({
   className,
   field,
   label,
   ...props
-}: TextareaFieldProps<TFieldValues, TName>) {
+}: TextareaFieldProps<TFieldValues>) {
   const textareaId = useId()
 
   return (

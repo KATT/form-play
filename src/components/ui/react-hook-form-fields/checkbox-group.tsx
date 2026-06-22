@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react'
-import { Controller, type FieldPath, type FieldValues } from 'react-hook-form'
+import { Controller, type FieldValues } from 'react-hook-form'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -22,27 +22,22 @@ const CheckboxGroupContext = createContext<
   CheckboxGroupContextValue | undefined
 >(undefined)
 
-interface CheckboxGroupFieldProps<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
-> extends FieldComponentBase<TFieldValues, TName> {
+interface CheckboxGroupFieldProps<TFieldValues extends FieldValues>
+  extends FieldComponentBase<TFieldValues> {
   children: React.ReactNode
   className: string | undefined
   description: React.ReactNode | undefined
   optionsClassName: string | undefined
 }
 
-function CheckboxGroupField<
-  TFieldValues extends FieldValues,
-  TName extends FieldPath<TFieldValues>,
->({
+function CheckboxGroupField<TFieldValues extends FieldValues>({
   children,
   className,
   description,
   field,
   label,
   optionsClassName,
-}: CheckboxGroupFieldProps<TFieldValues, TName>) {
+}: CheckboxGroupFieldProps<TFieldValues>) {
   return (
     <Controller
       control={field.control}
