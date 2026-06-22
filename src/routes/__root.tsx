@@ -2,23 +2,8 @@ import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 
+import { ThemeProvider } from '@/components/theme-provider'
 import appCss from '../styles.css?url'
-
-const systemThemeScript = `
-(() => {
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-
-  const applySystemTheme = () => {
-    document.documentElement.classList.toggle('dark', mediaQuery.matches)
-    document.documentElement.style.colorScheme = mediaQuery.matches
-      ? 'dark'
-      : 'light'
-  }
-
-  applySystemTheme()
-  mediaQuery.addEventListener('change', applySystemTheme)
-})()
-`
 
 export const Route = createRootRoute({
   head: () => ({
@@ -48,22 +33,23 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: systemThemeScript }} />
         <HeadContent />
       </head>
       <body>
-        {children}
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        <ThemeProvider defaultTheme="system" storageKey="theme">
+          {children}
+          <TanStackDevtools
+            config={{
+              position: 'bottom-right',
+            }}
+            plugins={[
+              {
+                name: 'Tanstack Router',
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+            ]}
+          />
+        </ThemeProvider>
         <Scripts />
       </body>
     </html>
