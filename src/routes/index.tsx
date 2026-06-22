@@ -886,6 +886,19 @@ function LineItemsSection({
   const currency = useWatch(field('currency'))
   const { errors } = useFormState({ control: field('lineItems').control })
   const lineItemsError = errors.lineItems
+  const lineItemsRootError =
+    lineItemsError && typeof lineItemsError === 'object' && 'root' in lineItemsError
+      ? lineItemsError.root
+      : undefined
+  const lineItemsErrorMessage =
+    lineItemsRootError &&
+    typeof lineItemsRootError === 'object' &&
+    'message' in lineItemsRootError &&
+    typeof lineItemsRootError.message === 'string'
+      ? lineItemsRootError.message
+      : Array.isArray(lineItemsError)
+        ? undefined
+        : lineItemsError?.message
   const lineItemIds = useMemo(
     () => fields.map((lineItemField) => lineItemField.id),
     [fields],
@@ -959,11 +972,7 @@ function LineItemsSection({
           >
             Add Line Item
           </Button>
-          <FieldError>
-            {Array.isArray(lineItemsError)
-              ? undefined
-              : lineItemsError?.message}
-          </FieldError>
+          <FieldError>{lineItemsErrorMessage}</FieldError>
         </FieldSet>
       </CardContent>
     </Card>
