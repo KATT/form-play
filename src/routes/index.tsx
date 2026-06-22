@@ -1,4 +1,21 @@
 import { zodResolver } from '@hookform/resolvers/zod'
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { createHighlighterCore } from '@shikijs/core'
 import { createJavaScriptRegexEngine } from '@shikijs/engine-javascript'
 import jsonLanguage from '@shikijs/langs/json'
@@ -12,7 +29,7 @@ import {
   useDeferredValue,
   useMemo,
 } from 'react'
-import { FileCheckIcon } from 'lucide-react'
+import { FileCheckIcon, GripVerticalIcon } from 'lucide-react'
 import {
   useFieldArray,
   useFormContext,
@@ -69,7 +86,7 @@ import {
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useTheme } from '@/components/theme-provider'
-import type { DefaultValuesForDiscriminatedUnion } from '@/lib/utils'
+import { cn, type DefaultValuesForDiscriminatedUnion } from '@/lib/utils'
 import {
   sampleApiBill,
   type ApiBill,
@@ -850,55 +867,73 @@ function LineItemsSection({
   field: BillFormField
   locale: AppLocale
 }) {
-  const { fields, append, remove } = useFieldArray(field('lineItems'))
+  const { fields, append, move, remove } = useFieldArray(field('lineItems'))
   const currency = useWatch(field('currency'))
+  const lineItemIds = useMemo(
+    () => fields.map((lineItemField) => lineItemField.id),
+    [fields],
+  )
+  const dragSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
 
   return (
     <Card>
       <CardContent>
         <FieldSet>
           <FieldLegend>Line items</FieldLegend>
-          <div className="flex flex-col gap-4">
-            {fields.map((lineItemField, index) => (
-              <Card key={lineItemField.id}>
-                <CardContent className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]">
-                  <TextInputField
-                    field={field(`lineItems.${index}.description`)}
-                    label="Description"
-                  />
-                  <TextInputField
-                    field={field(`lineItems.${index}.quantity`)}
-                    label="Qty"
-                    min={1}
-                    type="number"
-                  />
-                  <MoneyInputField
+          <DndContext
+            collisionDetection={closestCenter}
+            modifiers={[restrictToVerticalAxis]}
+            sensors={dragSensors}
+            onDragEnd={(event: DragEndEvent) => {
+              const { active, over } = event
+
+              if (!over || active.id === over.id) {
+                return
+              }
+
+              const activeIndex = fields.findIndex(
+                (lineItemField) => lineItemField.id === active.id,
+              )
+              const overIndex = fields.findIndex(
+                (lineItemField) => lineItemField.id === over.id,
+              )
+
+              if (activeIndex === -1 || overIndex === -1) {
+                return
+              }
+
+              move(activeIndex, overIndex)
+            }}
+          >
+            <SortableContext
+              items={lineItemIds}
+              strategy={verticalListSortingStrategy}
+            >
+              <div className="flex flex-col gap-4">
+                {fields.map((lineItemField, index) => (
+                  <SortableLineItemCard
+                    key={lineItemField.id}
+                    canRemove={fields.length > 1}
                     currency={currency}
-                    field={field(`lineItems.${index}.unitAmountCents`)}
-                    label="Unit price"
+                    field={field}
+                    id={lineItemField.id}
+                    index={index}
                     locale={locale}
-                    min={0}
-                    step="0.01"
+                    onRemove={() => remove(index)}
                   />
-                  <div className="flex items-center gap-3 self-end">
-                    <CheckboxField
-                      field={field(`lineItems.${index}.taxable`)}
-                      label="Taxable"
-                    />
-                    <Button
-                      disabled={fields.length === 1}
-                      size="lg"
-                      type="button"
-                      variant="destructive"
-                      onClick={() => remove(index)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
           <Button
             className="self-start"
             type="button"
@@ -908,6 +943,93 @@ function LineItemsSection({
             Add Line Item
           </Button>
         </FieldSet>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SortableLineItemCard({
+  canRemove,
+  currency,
+  field,
+  id,
+  index,
+  locale,
+  onRemove,
+}: {
+  canRemove: boolean
+  currency: (typeof currencies)[number]
+  field: BillFormField
+  id: string
+  index: number
+  locale: AppLocale
+  onRemove: () => void
+}) {
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id })
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+      className={cn(isDragging && 'relative z-10 opacity-80')}
+    >
+      <CardContent className="grid gap-3 md:grid-cols-[auto_1fr_110px_140px_auto]">
+        <Button
+          {...attributes}
+          {...listeners}
+          ref={setActivatorNodeRef}
+          aria-label={`Move line item ${index + 1}`}
+          className="cursor-grab self-end active:cursor-grabbing"
+          size="icon-lg"
+          type="button"
+          variant="ghost"
+        >
+          <GripVerticalIcon aria-hidden="true" />
+        </Button>
+        <TextInputField
+          field={field(`lineItems.${index}.description`)}
+          label="Description"
+        />
+        <TextInputField
+          field={field(`lineItems.${index}.quantity`)}
+          label="Qty"
+          min={1}
+          type="number"
+        />
+        <MoneyInputField
+          currency={currency}
+          field={field(`lineItems.${index}.unitAmountCents`)}
+          label="Unit price"
+          locale={locale}
+          min={0}
+          step="0.01"
+        />
+        <div className="flex items-center gap-3 self-end">
+          <CheckboxField
+            field={field(`lineItems.${index}.taxable`)}
+            label="Taxable"
+          />
+          <Button
+            disabled={!canRemove}
+            size="lg"
+            type="button"
+            variant="destructive"
+            onClick={onRemove}
+          >
+            Remove
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )
