@@ -8,7 +8,6 @@ import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields
 interface ControlledSelectInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >
   extends
     Omit<
@@ -22,27 +21,25 @@ interface ControlledSelectInputProps<
       | 'size'
       | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
+    ControlledFieldBase<TFieldValues, TName> {
   children: React.ReactNode
 }
 
 function ControlledSelectInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   children,
-  control,
+  field: controlledField,
   label,
-  name,
   ...props
-}: ControlledSelectInputProps<TFieldValues, TName, TTransformedValues>) {
+}: ControlledSelectInputProps<TFieldValues, TName>) {
   const selectId = useId()
 
   return (
     <Controller
-      control={control}
-      name={name}
+      control={controlledField.control}
+      name={controlledField.name}
       render={({ field, fieldState }) => {
         const error = fieldState.error?.message
 

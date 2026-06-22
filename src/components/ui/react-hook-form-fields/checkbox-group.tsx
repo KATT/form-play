@@ -25,8 +25,7 @@ const CheckboxGroupContext = createContext<
 interface ControlledCheckboxGroupProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
-> extends ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
+> extends ControlledFieldBase<TFieldValues, TName> {
   children: React.ReactNode
   className: string | undefined
   description: React.ReactNode | undefined
@@ -36,24 +35,18 @@ interface ControlledCheckboxGroupProps<
 function ControlledCheckboxGroup<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   children,
   className,
-  control,
   description,
+  field: controlledField,
   label,
-  name,
   optionsClassName,
-}: ControlledCheckboxGroupProps<
-  TFieldValues,
-  TName,
-  TTransformedValues
->) {
+}: ControlledCheckboxGroupProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={control}
-      name={name}
+      control={controlledField.control}
+      name={controlledField.name}
       render={({ field, fieldState }) => {
         const selectedValues = Array.isArray(field.value)
           ? (field.value as string[])

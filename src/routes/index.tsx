@@ -13,7 +13,7 @@ import {
   useMemo,
 } from 'react'
 import { FileCheckIcon } from 'lucide-react'
-import { type UseFormReturn, useFieldArray, useWatch } from 'react-hook-form'
+import { useFieldArray, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
 import {
@@ -36,6 +36,7 @@ import { ConditionalTooltip } from '@/components/ui/conditional-tooltip'
 import {
   ResolverForm,
   SubmitButton,
+  type UseResolverForm,
   useResolverForm,
 } from '@/components/ui/react-hook-form-fields/form'
 import {
@@ -343,8 +344,9 @@ const billFormSchema = billFormInputSchema.transform((values): ApiSubmission => 
 
 type BillFormInputValues = z.input<typeof billFormSchema>
 type BillFormSubmission = z.output<typeof billFormSchema>
-type BillForm = UseFormReturn<BillFormInputValues, unknown, BillFormSubmission>
+type BillForm = UseResolverForm<BillFormInputValues, BillFormSubmission>
 type BillFormControl = BillForm['control']
+type BillFormField = BillForm['field']
 type RecurrenceInputValues = NonNullable<BillFormInputValues['recurrence']>
 
 function Home() {
@@ -504,11 +506,19 @@ function UpsertBillForm({
             console.info('Submitting bill', submission)
           }}
         >
-          <BillDetailsSection control={form.control} />
-          <BillTypeSection control={form.control} />
-          <LineItemsSection control={form.control} locale={locale} />
-          <PaymentNotesSection control={form.control} />
-          <SubmissionSection control={form.control} locale={locale} />
+          <BillDetailsSection field={form.field} />
+          <BillTypeSection control={form.control} field={form.field} />
+          <LineItemsSection
+            control={form.control}
+            field={form.field}
+            locale={locale}
+          />
+          <PaymentNotesSection field={form.field} />
+          <SubmissionSection
+            control={form.control}
+            field={form.field}
+            locale={locale}
+          />
         </ResolverForm>
       </section>
 
@@ -520,7 +530,7 @@ function UpsertBillForm({
   )
 }
 
-function BillDetailsSection({ control }: { control: BillFormControl }) {
+function BillDetailsSection({ field }: { field: BillFormField }) {
   return (
     <Card>
       <CardHeader>
@@ -529,23 +539,20 @@ function BillDetailsSection({ control }: { control: BillFormControl }) {
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
           <ControlledTextInput
-            control={control}
+            field={field('customerName')}
             label="Customer name"
-            name="customerName"
             autoComplete="organization"
           />
           <ControlledTextInput
-            control={control}
+            field={field('customerEmail')}
             label="Customer email"
-            name="customerEmail"
             autoComplete="email"
             spellCheck={false}
             type="email"
           />
           <ControlledSelectInput
-            control={control}
+            field={field('status')}
             label="Status"
-            name="status"
           >
             {billStatuses.map((status) => (
               <NativeSelectOption key={status} value={status}>
@@ -554,9 +561,8 @@ function BillDetailsSection({ control }: { control: BillFormControl }) {
             ))}
           </ControlledSelectInput>
           <ControlledSelectInput
-            control={control}
+            field={field('currency')}
             label="Currency"
-            name="currency"
           >
             {currencies.map((currency) => (
               <NativeSelectOption key={currency} value={currency}>
@@ -570,7 +576,13 @@ function BillDetailsSection({ control }: { control: BillFormControl }) {
   )
 }
 
-function BillTypeSection({ control }: { control: BillFormControl }) {
+function BillTypeSection({
+  control,
+  field,
+}: {
+  control: BillFormControl
+  field: BillFormField
+}) {
   const editorMode = useWatch({ control, name: 'editorMode' })
   const billType = useWatch({ control, name: 'billType' })
   const billTypeDisabledReason =
@@ -589,10 +601,12 @@ function BillTypeSection({ control }: { control: BillFormControl }) {
 
   switch (billType) {
     case 'one_off':
-      scheduleFields = <OneOffScheduleFields control={control} />
+      scheduleFields = <OneOffScheduleFields field={field} />
       break
     case 'repeating':
-      scheduleFields = <RepeatingScheduleFields control={control} />
+      scheduleFields = (
+        <RepeatingScheduleFields control={control} field={field} />
+      )
       break
     case undefined:
       scheduleFields = null
@@ -609,9 +623,8 @@ function BillTypeSection({ control }: { control: BillFormControl }) {
       </CardHeader>
       <CardContent>
         <ControlledRadioCardGroup
-          control={control}
+          field={field('billType')}
           label="Bill type"
-          name="billType"
         >
           <ConditionalTooltip disabledReason={oneOffDisabledReason}>
             <ControlledRadioCardGroupItem
@@ -647,21 +660,19 @@ function BillTypeSection({ control }: { control: BillFormControl }) {
   )
 }
 
-function OneOffScheduleFields({ control }: { control: BillFormControl }) {
+function OneOffScheduleFields({ field }: { field: BillFormField }) {
   return (
     <Card className="mt-5">
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
           <ControlledTextInput
-            control={control}
+            field={field('issueDate')}
             label="Issue date"
-            name="issueDate"
             type="date"
           />
           <ControlledTextInput
-            control={control}
+            field={field('dueDate')}
             label="Due date"
-            name="dueDate"
             type="date"
           />
         </FieldGroup>
@@ -670,21 +681,25 @@ function OneOffScheduleFields({ control }: { control: BillFormControl }) {
   )
 }
 
-function RepeatingScheduleFields({ control }: { control: BillFormControl }) {
+function RepeatingScheduleFields({
+  control,
+  field,
+}: {
+  control: BillFormControl
+  field: BillFormField
+}) {
   return (
     <Card className="mt-5">
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
           <ControlledTextInput
-            control={control}
+            field={field('issueDate')}
             label="First issue date"
-            name="issueDate"
             type="date"
           />
           <ControlledSelectInput
-            control={control}
+            field={field('recurrence.frequency')}
             label="Frequency"
-            name="recurrence.frequency"
           >
             {recurrenceFrequencies.map((frequency) => (
               <NativeSelectOption key={frequency} value={frequency}>
@@ -693,23 +708,20 @@ function RepeatingScheduleFields({ control }: { control: BillFormControl }) {
             ))}
           </ControlledSelectInput>
           <ControlledTextInput
-            control={control}
+            field={field('recurrence.interval')}
             label="Every"
             min={1}
-            name="recurrence.interval"
             type="number"
           />
           <ControlledTextInput
-            control={control}
+            field={field('recurrence.startsOn')}
             label="Starts on"
-            name="recurrence.startsOn"
             type="date"
           />
-          <RecurrenceFrequencyFields control={control} />
+          <RecurrenceFrequencyFields control={control} field={field} />
           <ControlledSelectInput
-            control={control}
+            field={field('recurrence.endStrategy')}
             label="Ends"
-            name="recurrence.endStrategy"
           >
             <NativeSelectOption value="never">Never</NativeSelectOption>
             <NativeSelectOption value="on_date">On a date</NativeSelectOption>
@@ -717,14 +729,20 @@ function RepeatingScheduleFields({ control }: { control: BillFormControl }) {
               After occurrences
             </NativeSelectOption>
           </ControlledSelectInput>
-          <RecurrenceEndFields control={control} />
+          <RecurrenceEndFields control={control} field={field} />
         </FieldGroup>
       </CardContent>
     </Card>
   )
 }
 
-function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
+function RecurrenceFrequencyFields({
+  control,
+  field,
+}: {
+  control: BillFormControl
+  field: BillFormField
+}) {
   const frequency = useWatch({ control, name: 'recurrence.frequency' })
 
   switch (frequency) {
@@ -733,10 +751,9 @@ function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
       return (
         <ControlledCheckboxGroup
           className="md:col-span-2"
-          control={control}
           description="Choose which weekdays should generate an occurrence."
+          field={field('recurrence.weekdays')}
           label="Weekdays"
-          name="recurrence.weekdays"
           optionsClassName="grid grid-cols-2 gap-3 sm:grid-cols-4"
         >
           {weekdays.map((weekday) => (
@@ -750,9 +767,8 @@ function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
       return (
         <>
           <ControlledTextInput
-            control={control}
+            field={field('recurrence.monthlyAnchorDate')}
             label="Monthly anchor date"
-            name="recurrence.monthlyAnchorDate"
             type="date"
           />
           <FieldDescription>
@@ -765,9 +781,8 @@ function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
       return (
         <>
           <ControlledTextInput
-            control={control}
+            field={field('recurrence.yearlyAnchorDate')}
             label="Yearly anchor date"
-            name="recurrence.yearlyAnchorDate"
             type="date"
           />
           <FieldDescription>
@@ -783,7 +798,13 @@ function RecurrenceFrequencyFields({ control }: { control: BillFormControl }) {
       return null
   }
 }
-function RecurrenceEndFields({ control }: { control: BillFormControl }) {
+function RecurrenceEndFields({
+  control,
+  field,
+}: {
+  control: BillFormControl
+  field: BillFormField
+}) {
   const endStrategy = useWatch({ control, name: 'recurrence.endStrategy' })
 
   switch (endStrategy) {
@@ -793,19 +814,17 @@ function RecurrenceEndFields({ control }: { control: BillFormControl }) {
     case 'on_date':
       return (
         <ControlledTextInput
-          control={control}
+          field={field('recurrence.endsOn')}
           label="End date"
-          name="recurrence.endsOn"
           type="date"
         />
       )
     case 'after_occurrences':
       return (
         <ControlledTextInput
-          control={control}
+          field={field('recurrence.occurrenceCount')}
           label="Occurrences"
           min={2}
-          name="recurrence.occurrenceCount"
           type="number"
         />
       )
@@ -817,9 +836,11 @@ function RecurrenceEndFields({ control }: { control: BillFormControl }) {
 
 function LineItemsSection({
   control,
+  field,
   locale,
 }: {
   control: BillFormControl
+  field: BillFormField
   locale: AppLocale
 }) {
   const { fields, append, remove } = useFieldArray({
@@ -835,35 +856,31 @@ function LineItemsSection({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-4">
-          {fields.map((field, index) => (
-            <Card key={field.id}>
+          {fields.map((lineItemField, index) => (
+            <Card key={lineItemField.id}>
               <CardContent className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]">
                 <ControlledTextInput
-                  control={control}
+                  field={field(`lineItems.${index}.description`)}
                   label="Description"
-                  name={`lineItems.${index}.description`}
                 />
                 <ControlledTextInput
-                  control={control}
+                  field={field(`lineItems.${index}.quantity`)}
                   label="Qty"
                   min={1}
-                  name={`lineItems.${index}.quantity`}
                   type="number"
                 />
                 <ControlledMoneyInput
-                  control={control}
                   currency={currency}
+                  field={field(`lineItems.${index}.unitAmountCents`)}
                   label="Unit price"
                   locale={locale}
                   min={0}
-                  name={`lineItems.${index}.unitAmountCents`}
                   step="0.01"
                 />
                 <div className="flex items-end gap-3">
                   <ControlledCheckboxField
-                    control={control}
+                    field={field(`lineItems.${index}.taxable`)}
                     label="Taxable"
-                    name={`lineItems.${index}.taxable`}
                   />
                   <Button
                     disabled={fields.length === 1}
@@ -892,7 +909,7 @@ function LineItemsSection({
   )
 }
 
-function PaymentNotesSection({ control }: { control: BillFormControl }) {
+function PaymentNotesSection({ field }: { field: BillFormField }) {
   return (
     <Card>
       <CardHeader>
@@ -901,24 +918,21 @@ function PaymentNotesSection({ control }: { control: BillFormControl }) {
       <CardContent>
         <FieldGroup className="grid gap-4 md:grid-cols-2">
           <ControlledTextInput
-            control={control}
+            field={field('taxRate')}
             label="Tax rate (%)"
             min={0}
-            name="taxRate"
             step="0.01"
             type="number"
           />
           <ControlledCheckboxField
-            control={control}
+            field={field('collectPaymentAutomatically')}
             label="Collect payment automatically"
-            name="collectPaymentAutomatically"
           />
         </FieldGroup>
         <ControlledTextareaInput
           className="mt-4"
-          control={control}
+          field={field('memo')}
           label="Memo"
-          name="memo"
           rows={4}
         />
       </CardContent>
@@ -928,9 +942,11 @@ function PaymentNotesSection({ control }: { control: BillFormControl }) {
 
 function SubmissionSection({
   control,
+  field,
   locale,
 }: {
   control: BillFormControl
+  field: BillFormField
   locale: AppLocale
 }) {
   const lineItems = useWatch({ control, name: 'lineItems' })
@@ -989,9 +1005,8 @@ function SubmissionSection({
         </div>
         <div className="flex flex-wrap gap-3">
           <ControlledSelectInput
-            control={control}
+            field={field('submitIntent')}
             label="Submit as"
-            name="submitIntent"
           >
             <NativeSelectOption value="create">
               Create Endpoint

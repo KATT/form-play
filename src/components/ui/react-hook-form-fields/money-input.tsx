@@ -16,7 +16,6 @@ const currencyAmountInputPattern = /^\d+(\.\d{1,2})?$/
 interface ControlledMoneyInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >
   extends
     Omit<
@@ -31,7 +30,7 @@ interface ControlledMoneyInputProps<
       | 'type'
       | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
+    ControlledFieldBase<TFieldValues, TName> {
   currency: string
   locale: string
 }
@@ -39,16 +38,14 @@ interface ControlledMoneyInputProps<
 function ControlledMoneyInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   currency,
-  control,
+  field: controlledField,
   label,
   locale,
-  name,
   placeholder,
   ...props
-}: ControlledMoneyInputProps<TFieldValues, TName, TTransformedValues>) {
+}: ControlledMoneyInputProps<TFieldValues, TName>) {
   const currencyAdornment = useMemo(() => {
     const parts = new Intl.NumberFormat(locale, {
       currency,
@@ -71,8 +68,8 @@ function ControlledMoneyInput<
 
   return (
     <Controller
-      control={control}
-      name={name}
+      control={controlledField.control}
+      name={controlledField.name}
       render={({ field, fieldState }) => {
         const error = fieldState.error?.message
 

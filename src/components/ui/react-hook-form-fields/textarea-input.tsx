@@ -8,34 +8,31 @@ import { Textarea } from '@/components/ui/textarea'
 interface ControlledTextareaInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >
   extends
     Omit<
       React.TextareaHTMLAttributes<HTMLTextAreaElement>,
       'defaultValue' | 'form' | 'id' | 'name' | 'onBlur' | 'onChange' | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
+    ControlledFieldBase<TFieldValues, TName> {
   className?: string
 }
 
 function ControlledTextareaInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   className,
-  control,
+  field: controlledField,
   label,
-  name,
   ...props
-}: ControlledTextareaInputProps<TFieldValues, TName, TTransformedValues>) {
+}: ControlledTextareaInputProps<TFieldValues, TName>) {
   const textareaId = useId()
 
   return (
     <Controller
-      control={control}
-      name={name}
+      control={controlledField.control}
+      name={controlledField.name}
       render={({ field, fieldState }) => {
         const error = fieldState.error?.message
 

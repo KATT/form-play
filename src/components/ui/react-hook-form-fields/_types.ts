@@ -1,13 +1,19 @@
 import type { Control, FieldPath, FieldValues } from 'react-hook-form'
 
-interface ControlledFieldBase<
+interface FormField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 > {
-  control: Control<TFieldValues, unknown, TTransformedValues>
-  label: string
+  control: Control<TFieldValues>
   name: TName
 }
 
-export type { ControlledFieldBase }
+interface ControlledFieldBase<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+> {
+  field: FormField<TFieldValues, TName>
+  label: string
+}
+
+export type { ControlledFieldBase, FormField }

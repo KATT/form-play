@@ -7,7 +7,6 @@ import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields
 interface ControlledCheckboxFieldProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >
   extends
     Omit<
@@ -19,22 +18,20 @@ interface ControlledCheckboxFieldProps<
       | 'onBlur'
       | 'onCheckedChange'
     >,
-    ControlledFieldBase<TFieldValues, TName, TTransformedValues> {}
+    ControlledFieldBase<TFieldValues, TName> {}
 
 function ControlledCheckboxField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
-  control,
+  field: controlledField,
   label,
-  name,
   ...props
-}: ControlledCheckboxFieldProps<TFieldValues, TName, TTransformedValues>) {
+}: ControlledCheckboxFieldProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={control}
-      name={name}
+      control={controlledField.control}
+      name={controlledField.name}
       render={({ field, fieldState }) => {
         const error = fieldState.error?.message
 

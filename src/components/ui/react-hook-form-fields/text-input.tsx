@@ -8,31 +8,28 @@ import type { ControlledFieldBase } from '@/components/ui/react-hook-form-fields
 interface ControlledTextInputProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >
   extends
     Omit<
       React.InputHTMLAttributes<HTMLInputElement>,
       'defaultValue' | 'form' | 'id' | 'name' | 'onBlur' | 'onChange' | 'value'
     >,
-    ControlledFieldBase<TFieldValues, TName, TTransformedValues> {}
+    ControlledFieldBase<TFieldValues, TName> {}
 
 function ControlledTextInput<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
-  control,
+  field: controlledField,
   label,
-  name,
   ...props
-}: ControlledTextInputProps<TFieldValues, TName, TTransformedValues>) {
+}: ControlledTextInputProps<TFieldValues, TName>) {
   const inputId = useId()
 
   return (
     <Controller
-      control={control}
-      name={name}
+      control={controlledField.control}
+      name={controlledField.name}
       render={({ field, fieldState }) => {
         const error = fieldState.error?.message
 

@@ -23,8 +23,7 @@ const RadioCardGroupContext = createContext<
 interface ControlledRadioCardGroupProps<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
-> extends ControlledFieldBase<TFieldValues, TName, TTransformedValues> {
+> extends ControlledFieldBase<TFieldValues, TName> {
   children: React.ReactNode
   className?: string
 }
@@ -32,20 +31,18 @@ interface ControlledRadioCardGroupProps<
 function ControlledRadioCardGroup<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
-  TTransformedValues extends FieldValues | undefined = FieldValues,
 >({
   children,
   className,
-  control,
+  field: controlledField,
   label,
-  name,
-}: ControlledRadioCardGroupProps<TFieldValues, TName, TTransformedValues>) {
+}: ControlledRadioCardGroupProps<TFieldValues, TName>) {
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
       <Controller
-        control={control}
-        name={name}
+        control={controlledField.control}
+        name={controlledField.name}
         render={({ field, fieldState }) => {
           const error = fieldState.error?.message
           const selectedValue = field.value == null ? '' : String(field.value)

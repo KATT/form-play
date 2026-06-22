@@ -7,7 +7,9 @@ import {
   XIcon,
 } from 'lucide-react'
 import {
+  type Control,
   type DefaultValues,
+  type FieldPath,
   type FieldValues,
   FormProvider,
   type Resolver,
@@ -20,6 +22,7 @@ import {
 } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
+import type { FormField } from '@/components/ui/react-hook-form-fields/_types'
 import { Spinner } from '@/components/ui/spinner'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +42,9 @@ type UseResolverForm<
   TInput extends FieldValues,
   TOutput,
 > = UseFormReturn<TInput, unknown, TOutput> & {
+  field: <TName extends FieldPath<TInput>>(
+    name: TName,
+  ) => FormField<TInput, TName>
   /**
    * A unique ID for this form.
    */
@@ -65,6 +71,10 @@ function useResolverForm<TInput extends FieldValues, TOutput>(
   >
 
   form.id = useId()
+  form.field = (name) => ({
+    control: form.control as unknown as Control<TInput>,
+    name,
+  })
 
   return form
 }
