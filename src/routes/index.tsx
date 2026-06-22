@@ -13,7 +13,7 @@ import {
   useMemo,
 } from 'react'
 import { FileCheckIcon } from 'lucide-react'
-import { useFieldArray, useWatch } from 'react-hook-form'
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { z } from 'zod'
 
 import {
@@ -345,7 +345,6 @@ const billFormSchema = billFormInputSchema.transform((values): ApiSubmission => 
 type BillFormInputValues = z.input<typeof billFormSchema>
 type BillFormSubmission = z.output<typeof billFormSchema>
 type BillForm = UseResolverForm<BillFormInputValues, BillFormSubmission>
-type BillFormControl = BillForm['control']
 type BillFormField = BillForm['field']
 type RecurrenceInputValues = NonNullable<BillFormInputValues['recurrence']>
 
@@ -493,40 +492,32 @@ function UpsertBillForm({
   })
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]">
+    <ResolverForm
+      className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px]"
+      form={form}
+      handleSubmit={async (submission) => {
+        await new Promise((resolve) => setTimeout(resolve, 900))
+        if (Math.random() < 0.5) {
+          throw new Error('The imaginary billing API rejected this submit.')
+        }
+        console.info('Submitting bill', submission)
+      }}
+    >
       <section>
-        <ResolverForm
-          className="flex flex-col gap-6"
-          form={form}
-          handleSubmit={async (submission) => {
-            await new Promise((resolve) => setTimeout(resolve, 900))
-            if (Math.random() < 0.5) {
-              throw new Error('The imaginary billing API rejected this submit.')
-            }
-            console.info('Submitting bill', submission)
-          }}
-        >
+        <div className="flex flex-col gap-6">
           <BillDetailsSection field={form.field} />
-          <BillTypeSection control={form.control} field={form.field} />
-          <LineItemsSection
-            control={form.control}
-            field={form.field}
-            locale={locale}
-          />
+          <BillTypeSection field={form.field} />
+          <LineItemsSection field={form.field} locale={locale} />
           <PaymentNotesSection field={form.field} />
-          <SubmissionSection
-            control={form.control}
-            field={form.field}
-            locale={locale}
-          />
-        </ResolverForm>
+          <SubmissionSection field={form.field} locale={locale} />
+        </div>
       </section>
 
       <aside className="flex flex-col gap-6 lg:sticky lg:top-6 lg:self-start">
         <CodePreviewCard title={sourceTitle} value={sourceValue} />
-        <SubmissionPreviewCard control={form.control} />
+        <SubmissionPreviewCard />
       </aside>
-    </div>
+    </ResolverForm>
   )
 }
 
@@ -576,15 +567,9 @@ function BillDetailsSection({ field }: { field: BillFormField }) {
   )
 }
 
-function BillTypeSection({
-  control,
-  field,
-}: {
-  control: BillFormControl
-  field: BillFormField
-}) {
-  const editorMode = useWatch({ control, name: 'editorMode' })
-  const billType = useWatch({ control, name: 'billType' })
+function BillTypeSection({ field }: { field: BillFormField }) {
+  const editorMode = useWatch(field('editorMode'))
+  const billType = useWatch(field('billType'))
   const billTypeDisabledReason =
     editorMode === 'api'
       ? 'Bill type is locked for imported API bills so the update payload stays compatible with the existing bill schedule.'
@@ -815,19 +800,14 @@ function RecurrenceEndFields({ field }: { field: BillFormField }) {
 }
 
 function LineItemsSection({
-  control,
   field,
   locale,
 }: {
-  control: BillFormControl
   field: BillFormField
   locale: AppLocale
 }) {
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: 'lineItems',
-  })
-  const currency = useWatch({ control, name: 'currency' })
+  const { fields, append, remove } = useFieldArray(field('lineItems'))
+  const currency = useWatch(field('currency'))
 
   return (
     <Card>
@@ -921,17 +901,15 @@ function PaymentNotesSection({ field }: { field: BillFormField }) {
 }
 
 function SubmissionSection({
-  control,
   field,
   locale,
 }: {
-  control: BillFormControl
   field: BillFormField
   locale: AppLocale
 }) {
-  const lineItems = useWatch({ control, name: 'lineItems' })
-  const taxRate = useWatch({ control, name: 'taxRate' })
-  const currency = useWatch({ control, name: 'currency' })
+  const lineItems = useWatch(field('lineItems'))
+  const taxRate = useWatch(field('taxRate'))
+  const currency = useWatch(field('currency'))
   const totals = useMemo(() => {
     const parsedLineItems = lineItemsSchema.safeParse(lineItems ?? [])
     const parsedTaxRate = taxRateSchema.safeParse(taxRate ?? '')
@@ -1009,7 +987,8 @@ function SubmissionSection({
   )
 }
 
-function SubmissionPreviewCard({ control }: { control: BillFormControl }) {
+function SubmissionPreviewCard() {
+  const { control } = useFormContext<BillFormInputValues>()
   const watchedValues = useWatch({ control })
   const parsedSubmission = billFormSchema.safeParse(watchedValues)
   const submissionPreview = parsedSubmission.success
