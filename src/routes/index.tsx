@@ -686,7 +686,7 @@ function OneOffScheduleFields({ field }: { field: BillFormField }) {
     <Card className="mt-5">
       <CardContent>
         <FieldSet>
-          <FieldLegend className="sr-only">One-off schedule</FieldLegend>
+          <FieldLegend>One-off schedule</FieldLegend>
           <FieldGroup className="grid gap-4 md:grid-cols-2">
             <TextInputField
               field={field('issueDate')}
@@ -710,7 +710,7 @@ function RepeatingScheduleFields({ field }: { field: BillFormField }) {
     <Card className="mt-5">
       <CardContent>
         <FieldSet>
-          <FieldLegend className="sr-only">Repeating schedule</FieldLegend>
+          <FieldLegend>Repeating schedule</FieldLegend>
           <FieldGroup className="grid gap-4 md:grid-cols-2">
             <TextInputField
               field={field('issueDate')}
