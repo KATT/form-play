@@ -14,8 +14,6 @@ import {
 } from 'react'
 import { FileCheckIcon } from 'lucide-react'
 import {
-  type DefaultValues,
-  type FieldValues,
   useFieldArray,
   useFormContext,
   useWatch,
@@ -69,6 +67,7 @@ import {
 } from '@/components/ui/field'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import type { DefaultValuesForDiscriminatedUnion } from '@/lib/utils'
 import {
   sampleApiBill,
   type ApiBill,
@@ -349,20 +348,6 @@ const billFormSchema = billFormInputSchema.transform((values): ApiSubmission => 
 type BillFormInputValues = z.input<typeof billFormSchema>
 type BillFormSubmission = z.output<typeof billFormSchema>
 type RecurrenceInputValues = z.input<typeof recurrenceSchema>
-type KeysOfUnion<TValue> = TValue extends unknown ? keyof TValue : never
-type ValueOfUnion<TValue, TKey extends PropertyKey> = TValue extends unknown
-  ? TKey extends keyof TValue
-    ? TValue[TKey]
-    : never
-  : never
-type DefaultValuesForDiscriminatedUnion<TFieldValues extends FieldValues> =
-  DefaultValues<TFieldValues> &
-    Partial<{
-      [TKey in Exclude<
-        KeysOfUnion<TFieldValues>,
-        keyof TFieldValues
-      >]: ValueOfUnion<TFieldValues, TKey>
-    }>
 type BillFormDefaultValues =
   DefaultValuesForDiscriminatedUnion<BillFormInputValues>
 type BillForm = UseResolverForm<BillFormInputValues, BillFormSubmission>
