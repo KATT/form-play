@@ -63,6 +63,8 @@ import {
   FieldContent,
   FieldDescription,
   FieldGroup,
+  FieldLegend,
+  FieldSet,
   FieldTitle,
 } from '@/components/ui/field'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
@@ -565,40 +567,43 @@ function BillDetailsSection({ field }: { field: BillFormField }) {
         <CardTitle>Bill Details</CardTitle>
       </CardHeader>
       <CardContent>
-        <FieldGroup className="grid gap-4 md:grid-cols-2">
-          <TextInputField
-            field={field('customerName')}
-            label="Customer name"
-            autoComplete="organization"
-          />
-          <TextInputField
-            field={field('customerEmail')}
-            label="Customer email"
-            autoComplete="email"
-            spellCheck={false}
-            type="email"
-          />
-          <SelectField
-            field={field('status')}
-            label="Status"
-          >
-            {billStatuses.map((status) => (
-              <NativeSelectOption key={status} value={status}>
-                {titleCase(status)}
-              </NativeSelectOption>
-            ))}
-          </SelectField>
-          <SelectField
-            field={field('currency')}
-            label="Currency"
-          >
-            {currencies.map((currency) => (
-              <NativeSelectOption key={currency} value={currency}>
-                {currency}
-              </NativeSelectOption>
-            ))}
-          </SelectField>
-        </FieldGroup>
+        <FieldSet>
+          <FieldLegend className="sr-only">Bill details</FieldLegend>
+          <FieldGroup className="grid gap-4 md:grid-cols-2">
+            <TextInputField
+              field={field('customerName')}
+              label="Customer name"
+              autoComplete="organization"
+            />
+            <TextInputField
+              field={field('customerEmail')}
+              label="Customer email"
+              autoComplete="email"
+              spellCheck={false}
+              type="email"
+            />
+            <SelectField
+              field={field('status')}
+              label="Status"
+            >
+              {billStatuses.map((status) => (
+                <NativeSelectOption key={status} value={status}>
+                  {titleCase(status)}
+                </NativeSelectOption>
+              ))}
+            </SelectField>
+            <SelectField
+              field={field('currency')}
+              label="Currency"
+            >
+              {currencies.map((currency) => (
+                <NativeSelectOption key={currency} value={currency}>
+                  {currency}
+                </NativeSelectOption>
+              ))}
+            </SelectField>
+          </FieldGroup>
+        </FieldSet>
       </CardContent>
     </Card>
   )
@@ -642,39 +647,42 @@ function BillTypeSection({ field }: { field: BillFormField }) {
         <CardTitle>Bill Schedule</CardTitle>
       </CardHeader>
       <CardContent>
-        <RadioCardGroupField
-          field={field('billType')}
-          label="Bill type"
-        >
-          <ConditionalTooltip disabledReason={oneOffDisabledReason}>
-            <RadioCardGroupFieldItem
-              disabled={!!oneOffDisabledReason}
-              value="one_off"
-            >
-              <FieldContent>
-                <FieldTitle>One-off</FieldTitle>
-                <FieldDescription>
-                  Collect this bill once with a fixed due date.
-                </FieldDescription>
-              </FieldContent>
-            </RadioCardGroupFieldItem>
-          </ConditionalTooltip>
-          <ConditionalTooltip disabledReason={repeatingDisabledReason}>
-            <RadioCardGroupFieldItem
-              disabled={!!repeatingDisabledReason}
-              value="repeating"
-            >
-              <FieldContent>
-                <FieldTitle>Repeating</FieldTitle>
-                <FieldDescription>
-                  Generate future bills on a daily, weekly, monthly, or yearly
-                  cadence.
-                </FieldDescription>
-              </FieldContent>
-            </RadioCardGroupFieldItem>
-          </ConditionalTooltip>
-        </RadioCardGroupField>
-        {scheduleFields}
+        <FieldSet>
+          <FieldLegend className="sr-only">Bill schedule</FieldLegend>
+          <RadioCardGroupField
+            field={field('billType')}
+            label="Bill type"
+          >
+            <ConditionalTooltip disabledReason={oneOffDisabledReason}>
+              <RadioCardGroupFieldItem
+                disabled={!!oneOffDisabledReason}
+                value="one_off"
+              >
+                <FieldContent>
+                  <FieldTitle>One-off</FieldTitle>
+                  <FieldDescription>
+                    Collect this bill once with a fixed due date.
+                  </FieldDescription>
+                </FieldContent>
+              </RadioCardGroupFieldItem>
+            </ConditionalTooltip>
+            <ConditionalTooltip disabledReason={repeatingDisabledReason}>
+              <RadioCardGroupFieldItem
+                disabled={!!repeatingDisabledReason}
+                value="repeating"
+              >
+                <FieldContent>
+                  <FieldTitle>Repeating</FieldTitle>
+                  <FieldDescription>
+                    Generate future bills on a daily, weekly, monthly, or yearly
+                    cadence.
+                  </FieldDescription>
+                </FieldContent>
+              </RadioCardGroupFieldItem>
+            </ConditionalTooltip>
+          </RadioCardGroupField>
+          {scheduleFields}
+        </FieldSet>
       </CardContent>
     </Card>
   )
@@ -684,18 +692,21 @@ function OneOffScheduleFields({ field }: { field: BillFormField }) {
   return (
     <Card className="mt-5">
       <CardContent>
-        <FieldGroup className="grid gap-4 md:grid-cols-2">
-          <TextInputField
-            field={field('issueDate')}
-            label="Issue date"
-            type="date"
-          />
-          <TextInputField
-            field={field('dueDate')}
-            label="Due date"
-            type="date"
-          />
-        </FieldGroup>
+        <FieldSet>
+          <FieldLegend className="sr-only">One-off schedule</FieldLegend>
+          <FieldGroup className="grid gap-4 md:grid-cols-2">
+            <TextInputField
+              field={field('issueDate')}
+              label="Issue date"
+              type="date"
+            />
+            <TextInputField
+              field={field('dueDate')}
+              label="Due date"
+              type="date"
+            />
+          </FieldGroup>
+        </FieldSet>
       </CardContent>
     </Card>
   )
@@ -705,46 +716,49 @@ function RepeatingScheduleFields({ field }: { field: BillFormField }) {
   return (
     <Card className="mt-5">
       <CardContent>
-        <FieldGroup className="grid gap-4 md:grid-cols-2">
-          <TextInputField
-            field={field('issueDate')}
-            label="First issue date"
-            type="date"
-          />
-          <SelectField
-            field={field('recurrence.frequency')}
-            label="Frequency"
-          >
-            {recurrenceFrequencies.map((frequency) => (
-              <NativeSelectOption key={frequency} value={frequency}>
-                {titleCase(frequency)}
+        <FieldSet>
+          <FieldLegend className="sr-only">Repeating schedule</FieldLegend>
+          <FieldGroup className="grid gap-4 md:grid-cols-2">
+            <TextInputField
+              field={field('issueDate')}
+              label="First issue date"
+              type="date"
+            />
+            <SelectField
+              field={field('recurrence.frequency')}
+              label="Frequency"
+            >
+              {recurrenceFrequencies.map((frequency) => (
+                <NativeSelectOption key={frequency} value={frequency}>
+                  {titleCase(frequency)}
+                </NativeSelectOption>
+              ))}
+            </SelectField>
+            <TextInputField
+              field={field('recurrence.interval')}
+              label="Every"
+              min={1}
+              type="number"
+            />
+            <TextInputField
+              field={field('recurrence.startsOn')}
+              label="Starts on"
+              type="date"
+            />
+            <RecurrenceFrequencyFields field={field} />
+            <SelectField
+              field={field('recurrence.endStrategy')}
+              label="Ends"
+            >
+              <NativeSelectOption value="never">Never</NativeSelectOption>
+              <NativeSelectOption value="on_date">On a date</NativeSelectOption>
+              <NativeSelectOption value="after_occurrences">
+                After occurrences
               </NativeSelectOption>
-            ))}
-          </SelectField>
-          <TextInputField
-            field={field('recurrence.interval')}
-            label="Every"
-            min={1}
-            type="number"
-          />
-          <TextInputField
-            field={field('recurrence.startsOn')}
-            label="Starts on"
-            type="date"
-          />
-          <RecurrenceFrequencyFields field={field} />
-          <SelectField
-            field={field('recurrence.endStrategy')}
-            label="Ends"
-          >
-            <NativeSelectOption value="never">Never</NativeSelectOption>
-            <NativeSelectOption value="on_date">On a date</NativeSelectOption>
-            <NativeSelectOption value="after_occurrences">
-              After occurrences
-            </NativeSelectOption>
-          </SelectField>
-          <RecurrenceEndFields field={field} />
-        </FieldGroup>
+            </SelectField>
+            <RecurrenceEndFields field={field} />
+          </FieldGroup>
+        </FieldSet>
       </CardContent>
     </Card>
   )
@@ -852,55 +866,58 @@ function LineItemsSection({
         <CardTitle>Line Items</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col gap-4">
-          {fields.map((lineItemField, index) => (
-            <Card key={lineItemField.id}>
-              <CardContent className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]">
-                <TextInputField
-                  field={field(`lineItems.${index}.description`)}
-                  label="Description"
-                />
-                <TextInputField
-                  field={field(`lineItems.${index}.quantity`)}
-                  label="Qty"
-                  min={1}
-                  type="number"
-                />
-                <MoneyInputField
-                  currency={currency}
-                  field={field(`lineItems.${index}.unitAmountCents`)}
-                  label="Unit price"
-                  locale={locale}
-                  min={0}
-                  step="0.01"
-                />
-                <div className="flex items-center gap-3 self-end">
-                  <CheckboxField
-                    field={field(`lineItems.${index}.taxable`)}
-                    label="Taxable"
+        <FieldSet>
+          <FieldLegend className="sr-only">Line items</FieldLegend>
+          <div className="flex flex-col gap-4">
+            {fields.map((lineItemField, index) => (
+              <Card key={lineItemField.id}>
+                <CardContent className="grid gap-3 md:grid-cols-[1fr_110px_140px_auto]">
+                  <TextInputField
+                    field={field(`lineItems.${index}.description`)}
+                    label="Description"
                   />
-                  <Button
-                    disabled={fields.length === 1}
-                    size="lg"
-                    type="button"
-                    variant="destructive"
-                    onClick={() => remove(index)}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <Button
-          className="mt-4"
-          type="button"
-          variant="outline"
-          onClick={() => append(getDefaultLineItem())}
-        >
-          Add Line Item
-        </Button>
+                  <TextInputField
+                    field={field(`lineItems.${index}.quantity`)}
+                    label="Qty"
+                    min={1}
+                    type="number"
+                  />
+                  <MoneyInputField
+                    currency={currency}
+                    field={field(`lineItems.${index}.unitAmountCents`)}
+                    label="Unit price"
+                    locale={locale}
+                    min={0}
+                    step="0.01"
+                  />
+                  <div className="flex items-center gap-3 self-end">
+                    <CheckboxField
+                      field={field(`lineItems.${index}.taxable`)}
+                      label="Taxable"
+                    />
+                    <Button
+                      disabled={fields.length === 1}
+                      size="lg"
+                      type="button"
+                      variant="destructive"
+                      onClick={() => remove(index)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <Button
+            className="self-start"
+            type="button"
+            variant="outline"
+            onClick={() => append(getDefaultLineItem())}
+          >
+            Add Line Item
+          </Button>
+        </FieldSet>
       </CardContent>
     </Card>
   )
@@ -913,27 +930,29 @@ function PaymentNotesSection({ field }: { field: BillFormField }) {
         <CardTitle>Payment & Notes</CardTitle>
       </CardHeader>
       <CardContent>
-        <FieldGroup className="grid gap-4 md:grid-cols-2">
-          <TextInputField
-            field={field('taxRate')}
-            label="Tax rate (%)"
-            min={0}
-            step="0.01"
-            type="number"
-          />
-          <div className="self-end">
-            <CheckboxField
-              field={field('collectPaymentAutomatically')}
-              label="Collect payment automatically"
+        <FieldSet>
+          <FieldLegend className="sr-only">Payment and notes</FieldLegend>
+          <FieldGroup className="grid gap-4 md:grid-cols-2">
+            <TextInputField
+              field={field('taxRate')}
+              label="Tax rate (%)"
+              min={0}
+              step="0.01"
+              type="number"
             />
-          </div>
-        </FieldGroup>
-        <TextareaField
-          className="mt-4"
-          field={field('memo')}
-          label="Memo"
-          rows={4}
-        />
+            <div className="self-end">
+              <CheckboxField
+                field={field('collectPaymentAutomatically')}
+                label="Collect payment automatically"
+              />
+            </div>
+          </FieldGroup>
+          <TextareaField
+            field={field('memo')}
+            label="Memo"
+            rows={4}
+          />
+        </FieldSet>
       </CardContent>
     </Card>
   )
