@@ -33,6 +33,7 @@ import { FileCheckIcon, GripVerticalIcon } from 'lucide-react'
 import {
   useFieldArray,
   useFormContext,
+  useFormState,
   useWatch,
 } from 'react-hook-form'
 import { z } from 'zod'
@@ -78,6 +79,7 @@ import { TextareaField } from '@/components/ui/react-hook-form-fields/textarea-i
 import {
   FieldContent,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLegend,
   FieldSet,
@@ -185,7 +187,7 @@ const lineItemsSchema = z
         lineItem.unitAmountCents.trim() !== '',
     ),
   )
-  .pipe(z.array(lineItemSchema))
+  .pipe(z.array(lineItemSchema).min(1, 'Add at least one line item'))
 const taxRateSchema = requiredNumberInput('Tax rate is required').pipe(
   z.number().min(0).max(100, 'Tax rate cannot exceed 100%'),
 )
@@ -882,6 +884,8 @@ function LineItemsSection({
 }) {
   const { fields, append, move, remove } = useFieldArray(field('lineItems'))
   const currency = useWatch(field('currency'))
+  const { errors } = useFormState({ control: field('lineItems').control })
+  const lineItemsError = errors.lineItems
   const lineItemIds = useMemo(
     () => fields.map((lineItemField) => lineItemField.id),
     [fields],
@@ -955,6 +959,11 @@ function LineItemsSection({
           >
             Add Line Item
           </Button>
+          <FieldError>
+            {Array.isArray(lineItemsError)
+              ? undefined
+              : lineItemsError?.message}
+          </FieldError>
         </FieldSet>
       </CardContent>
     </Card>
