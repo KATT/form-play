@@ -4,6 +4,22 @@ import { TanStackDevtools } from '@tanstack/react-devtools'
 
 import appCss from '../styles.css?url'
 
+const systemThemeScript = `
+(() => {
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
+  const applySystemTheme = () => {
+    document.documentElement.classList.toggle('dark', mediaQuery.matches)
+    document.documentElement.style.colorScheme = mediaQuery.matches
+      ? 'dark'
+      : 'light'
+  }
+
+  applySystemTheme()
+  mediaQuery.addEventListener('change', applySystemTheme)
+})()
+`
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -30,8 +46,9 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: systemThemeScript }} />
         <HeadContent />
       </head>
       <body>
