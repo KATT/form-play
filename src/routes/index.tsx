@@ -220,12 +220,10 @@ const baseBillSchema = z.object({
 const oneOffBillSchema = baseBillSchema.extend({
   billType: z.literal('one_off'),
   dueDate: z.string().min(1, 'Choose a due date'),
-  recurrence: recurrenceSchema.optional(),
 })
 
 const repeatingBillSchema = baseBillSchema.extend({
   billType: z.literal('repeating'),
-  dueDate: z.string().optional(),
   recurrence: recurrenceSchema,
 })
 
@@ -346,7 +344,6 @@ type BillFormInputValues = z.input<typeof billFormSchema>
 type BillFormSubmission = z.output<typeof billFormSchema>
 type BillForm = UseResolverForm<BillFormInputValues, BillFormSubmission>
 type BillFormField = BillForm['field']
-type RecurrenceInputValues = NonNullable<BillFormInputValues['recurrence']>
 
 function Home() {
   const search = Route.useSearch()
@@ -1084,7 +1081,6 @@ function getNewBillDefaults(): BillFormInputValues {
     taxRate: '0',
     collectPaymentAutomatically: false,
     memo: '',
-    recurrence: getDefaultRecurrence(),
   }
 }
 
@@ -1131,7 +1127,6 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormInputValues {
     return {
       ...baseDefaults,
       billType: 'repeating',
-      dueDate: apiBill.due_date ?? undefined,
       recurrence: (() => {
         switch (apiBill.schedule.frequency) {
           case 'daily':
@@ -1162,7 +1157,6 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormInputValues {
     ...baseDefaults,
     billType: 'one_off',
     dueDate: apiBill.due_date ?? apiBill.issue_date,
-    recurrence: getDefaultRecurrence(),
   }
 }
 
@@ -1175,41 +1169,6 @@ function getDefaultLineItem(): BillFormInputValues['lineItems'][number] {
     quantity: '1',
     unitAmountCents: z.encode(currencyAmountSchema, 0),
     taxable: true,
-  }
-}
-
-function getDefaultRecurrence(
-  frequency: RecurrenceInputValues['frequency'] = 'monthly',
-): RecurrenceInputValues {
-  const startsOn = getDateInputValue(new Date())
-  const baseRecurrence = {
-    interval: '1',
-    startsOn,
-    endStrategy: 'never' as const,
-    endsOn: '',
-    occurrenceCount: undefined,
-  }
-
-  switch (frequency) {
-    case 'daily':
-    case 'weekly':
-      return {
-        ...baseRecurrence,
-        frequency,
-        weekdays: ['monday'],
-      }
-    case 'monthly':
-      return {
-        ...baseRecurrence,
-        frequency: 'monthly',
-        monthlyAnchorDate: startsOn,
-      }
-    case 'yearly':
-      return {
-        ...baseRecurrence,
-        frequency: 'yearly',
-        yearlyAnchorDate: startsOn,
-      }
   }
 }
 
