@@ -24,15 +24,15 @@ function CheckboxField<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >({
-  field: controlledField,
+  field,
   label,
   ...props
 }: CheckboxFieldProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={controlledField.control}
-      name={controlledField.name}
-      render={({ field, fieldState }) => {
+      control={field.control}
+      name={field.name}
+      render={({ field: controllerField, fieldState }) => {
         const error = fieldState.error?.message
 
         return (
@@ -41,9 +41,9 @@ function CheckboxField<
               <Checkbox
                 {...props}
                 aria-invalid={!!error}
-                checked={!!field.value}
-                ref={field.ref}
-                onCheckedChange={field.onChange}
+                checked={!!controllerField.value}
+                ref={controllerField.ref}
+                onCheckedChange={controllerField.onChange}
               />
               {label}
             </FieldLabel>

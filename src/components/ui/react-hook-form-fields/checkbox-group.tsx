@@ -39,17 +39,17 @@ function CheckboxGroupField<
   children,
   className,
   description,
-  field: controlledField,
+  field,
   label,
   optionsClassName,
 }: CheckboxGroupFieldProps<TFieldValues, TName>) {
   return (
     <Controller
-      control={controlledField.control}
-      name={controlledField.name}
-      render={({ field, fieldState }) => {
-        const selectedValues = Array.isArray(field.value)
-          ? (field.value as string[])
+      control={field.control}
+      name={field.name}
+      render={({ field: controllerField, fieldState }) => {
+        const selectedValues = Array.isArray(controllerField.value)
+          ? (controllerField.value as string[])
           : []
         const error = fieldState.error?.message
 
@@ -59,9 +59,9 @@ function CheckboxGroupField<
             <CheckboxGroupContext
               value={{
                 error: !!error,
-                fieldRef: field.ref,
+                fieldRef: controllerField.ref,
                 selectedValues,
-                setSelectedValues: field.onChange,
+                setSelectedValues: controllerField.onChange,
               }}
             >
               <FieldGroup className={optionsClassName}>{children}</FieldGroup>

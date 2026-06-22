@@ -23,7 +23,7 @@ function TextareaField<
   TName extends FieldPath<TFieldValues>,
 >({
   className,
-  field: controlledField,
+  field,
   label,
   ...props
 }: TextareaFieldProps<TFieldValues, TName>) {
@@ -31,9 +31,9 @@ function TextareaField<
 
   return (
     <Controller
-      control={controlledField.control}
-      name={controlledField.name}
-      render={({ field, fieldState }) => {
+      control={field.control}
+      name={field.name}
+      render={({ field: controllerField, fieldState }) => {
         const error = fieldState.error?.message
 
         return (
@@ -43,11 +43,17 @@ function TextareaField<
               {...props}
               aria-invalid={!!error}
               id={textareaId}
-              name={field.name}
-              ref={field.ref}
-              value={field.value == null ? '' : String(field.value)}
-              onBlur={field.onBlur}
-              onChange={(event) => field.onChange(event.currentTarget.value)}
+              name={controllerField.name}
+              ref={controllerField.ref}
+              value={
+                controllerField.value == null
+                  ? ''
+                  : String(controllerField.value)
+              }
+              onBlur={controllerField.onBlur}
+              onChange={(event) =>
+                controllerField.onChange(event.currentTarget.value)
+              }
             />
             <FieldError>{error}</FieldError>
           </Field>

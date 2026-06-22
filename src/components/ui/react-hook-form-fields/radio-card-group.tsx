@@ -34,25 +34,26 @@ function RadioCardGroupField<
 >({
   children,
   className,
-  field: controlledField,
+  field,
   label,
 }: RadioCardGroupFieldProps<TFieldValues, TName>) {
   return (
     <Field>
       <FieldLabel>{label}</FieldLabel>
       <Controller
-        control={controlledField.control}
-        name={controlledField.name}
-        render={({ field, fieldState }) => {
+        control={field.control}
+        name={field.name}
+        render={({ field: controllerField, fieldState }) => {
           const error = fieldState.error?.message
-          const selectedValue = field.value == null ? '' : String(field.value)
+          const selectedValue =
+            controllerField.value == null ? '' : String(controllerField.value)
 
           return (
             <>
               <RadioCardGroupContext
                 value={{
                   error: !!error,
-                  fieldRef: field.ref,
+                  fieldRef: controllerField.ref,
                   selectedValue,
                 }}
               >
@@ -60,7 +61,7 @@ function RadioCardGroupField<
                   aria-invalid={!!error}
                   className={cn('grid gap-4 md:grid-cols-2', className)}
                   value={selectedValue}
-                  onValueChange={(value) => field.onChange(value)}
+                  onValueChange={(value) => controllerField.onChange(value)}
                 >
                   {children}
                 </RadioGroup>

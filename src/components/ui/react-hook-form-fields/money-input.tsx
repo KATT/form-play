@@ -40,7 +40,7 @@ function MoneyInputField<
   TName extends FieldPath<TFieldValues>,
 >({
   currency,
-  field: controlledField,
+  field,
   label,
   locale,
   placeholder,
@@ -68,9 +68,9 @@ function MoneyInputField<
 
   return (
     <Controller
-      control={controlledField.control}
-      name={controlledField.name}
-      render={({ field, fieldState }) => {
+      control={field.control}
+      name={field.name}
+      render={({ field: controllerField, fieldState }) => {
         const error = fieldState.error?.message
 
         return (
@@ -87,22 +87,30 @@ function MoneyInputField<
                 aria-invalid={!!error}
                 id={inputId}
                 inputMode="decimal"
-                name={field.name}
+                name={controllerField.name}
                 placeholder={placeholder ?? `0.00 ${currency}`}
-                ref={field.ref}
+                ref={controllerField.ref}
                 type="number"
                 step="1"
-                value={field.value == null ? '' : String(field.value)}
+                value={
+                  controllerField.value == null
+                    ? ''
+                    : String(controllerField.value)
+                }
                 onBlur={() => {
-                  const formattedValue = formatCurrencyAmountInput(field.value)
+                  const formattedValue = formatCurrencyAmountInput(
+                    controllerField.value,
+                  )
 
                   if (formattedValue !== undefined) {
-                    field.onChange(formattedValue)
+                    controllerField.onChange(formattedValue)
                   }
 
-                  field.onBlur()
+                  controllerField.onBlur()
                 }}
-                onChange={(event) => field.onChange(event.currentTarget.value)}
+                onChange={(event) =>
+                  controllerField.onChange(event.currentTarget.value)
+                }
               />
               {currencyAdornment.align === 'inline-end' ? (
                 <InputGroupAddon align="inline-end">
