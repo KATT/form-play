@@ -14,7 +14,8 @@ import {
 } from 'react'
 import { FileCheckIcon } from 'lucide-react'
 import {
-  type Resolver,
+  type DefaultValues,
+  type FieldValues,
   useFieldArray,
   useFormContext,
   useWatch,
@@ -345,23 +346,27 @@ const billFormSchema = billFormInputSchema.transform((values): ApiSubmission => 
   }
 })
 
-type BillFormSchemaInputValues = z.input<typeof billFormSchema>
+type BillFormInputValues = z.input<typeof billFormSchema>
 type BillFormSubmission = z.output<typeof billFormSchema>
 type RecurrenceInputValues = z.input<typeof recurrenceSchema>
-type BillFormInputValues =
-  | (Extract<BillFormSchemaInputValues, { billType: 'one_off' }> & {
-      recurrence: RecurrenceInputValues
-    })
-  | (Extract<BillFormSchemaInputValues, { billType: 'repeating' }> & {
-      dueDate: string | undefined
-    })
+type KeysOfUnion<TValue> = TValue extends unknown ? keyof TValue : never
+type ValueOfUnion<TValue, TKey extends PropertyKey> = TValue extends unknown
+  ? TKey extends keyof TValue
+    ? TValue[TKey]
+    : never
+  : never
+type DefaultValuesForDiscriminatedUnion<TFieldValues extends FieldValues> =
+  DefaultValues<TFieldValues> &
+    Partial<{
+      [TKey in Exclude<
+        KeysOfUnion<TFieldValues>,
+        keyof TFieldValues
+      >]: ValueOfUnion<TFieldValues, TKey>
+    }>
+type BillFormDefaultValues =
+  DefaultValuesForDiscriminatedUnion<BillFormInputValues>
 type BillForm = UseResolverForm<BillFormInputValues, BillFormSubmission>
 type BillFormField = BillForm['field']
-const billFormResolver = zodResolver(billFormSchema) as unknown as Resolver<
-  BillFormInputValues,
-  unknown,
-  BillFormSubmission
->
 
 function Home() {
   const search = Route.useSearch()
@@ -477,6 +482,7 @@ function Home() {
                 locale={locale}
                 sourceTitle="API bill response"
                 sourceValue={sampleApiBill}
+                values={editBillDefaultValues}
               />
             </AccordionContent>
           </AccordionItem>
@@ -491,16 +497,18 @@ function UpsertBillForm({
   locale,
   sourceTitle,
   sourceValue,
+  values,
 }: {
-  defaultValues: BillFormInputValues
+  defaultValues: BillFormDefaultValues
   locale: AppLocale
   sourceTitle: string
   sourceValue: unknown
+  values?: BillFormInputValues | undefined
 }) {
   const form = useResolverForm<BillFormInputValues, BillFormSubmission>({
-    resolver: billFormResolver,
+    resolver: zodResolver(billFormSchema),
     defaultValues,
-    values: defaultValues,
+    values,
     resetOptions: {
       keepDefaultValues: true,
     },
@@ -1081,7 +1089,7 @@ function HighlightedJson({ code }: { code: string }) {
   )
 }
 
-function getNewBillDefaults(): BillFormInputValues {
+function getNewBillDefaults(): BillFormDefaultValues {
   const issueDate = new Date()
 
   return {
@@ -1146,7 +1154,6 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormInputValues {
     return {
       ...baseDefaults,
       billType: 'repeating',
-      dueDate: apiBill.due_date ?? undefined,
       recurrence: (() => {
         switch (apiBill.schedule.frequency) {
           case 'daily':
@@ -1177,7 +1184,6 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormInputValues {
     ...baseDefaults,
     billType: 'one_off',
     dueDate: apiBill.due_date ?? apiBill.issue_date,
-    recurrence: getDefaultRecurrence(),
   }
 }
 
