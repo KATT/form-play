@@ -13,7 +13,12 @@ import {
   useMemo,
 } from 'react'
 import { FileCheckIcon } from 'lucide-react'
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import {
+  type Resolver,
+  useFieldArray,
+  useFormContext,
+  useWatch,
+} from 'react-hook-form'
 import { z } from 'zod'
 
 import {
@@ -340,10 +345,23 @@ const billFormSchema = billFormInputSchema.transform((values): ApiSubmission => 
   }
 })
 
-type BillFormInputValues = z.input<typeof billFormSchema>
+type BillFormSchemaInputValues = z.input<typeof billFormSchema>
 type BillFormSubmission = z.output<typeof billFormSchema>
+type RecurrenceInputValues = z.input<typeof recurrenceSchema>
+type BillFormInputValues =
+  | (Extract<BillFormSchemaInputValues, { billType: 'one_off' }> & {
+      recurrence: RecurrenceInputValues
+    })
+  | (Extract<BillFormSchemaInputValues, { billType: 'repeating' }> & {
+      dueDate: string | undefined
+    })
 type BillForm = UseResolverForm<BillFormInputValues, BillFormSubmission>
 type BillFormField = BillForm['field']
+const billFormResolver = zodResolver(billFormSchema) as unknown as Resolver<
+  BillFormInputValues,
+  unknown,
+  BillFormSubmission
+>
 
 function Home() {
   const search = Route.useSearch()
@@ -480,7 +498,7 @@ function UpsertBillForm({
   sourceValue: unknown
 }) {
   const form = useResolverForm<BillFormInputValues, BillFormSubmission>({
-    resolver: zodResolver(billFormSchema),
+    resolver: billFormResolver,
     defaultValues,
     values: defaultValues,
     resetOptions: {
@@ -1081,6 +1099,7 @@ function getNewBillDefaults(): BillFormInputValues {
     taxRate: '0',
     collectPaymentAutomatically: false,
     memo: '',
+    recurrence: getDefaultRecurrence(),
   }
 }
 
@@ -1127,6 +1146,7 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormInputValues {
     return {
       ...baseDefaults,
       billType: 'repeating',
+      dueDate: apiBill.due_date ?? undefined,
       recurrence: (() => {
         switch (apiBill.schedule.frequency) {
           case 'daily':
@@ -1157,6 +1177,7 @@ function getBillDefaultsFromApi(apiBill: ApiBill): BillFormInputValues {
     ...baseDefaults,
     billType: 'one_off',
     dueDate: apiBill.due_date ?? apiBill.issue_date,
+    recurrence: getDefaultRecurrence(),
   }
 }
 
@@ -1169,6 +1190,41 @@ function getDefaultLineItem(): BillFormInputValues['lineItems'][number] {
     quantity: '1',
     unitAmountCents: z.encode(currencyAmountSchema, 0),
     taxable: true,
+  }
+}
+
+function getDefaultRecurrence(
+  frequency: RecurrenceInputValues['frequency'] = 'monthly',
+): RecurrenceInputValues {
+  const startsOn = getDateInputValue(new Date())
+  const baseRecurrence = {
+    interval: '1',
+    startsOn,
+    endStrategy: 'never' as const,
+    endsOn: '',
+    occurrenceCount: undefined,
+  }
+
+  switch (frequency) {
+    case 'daily':
+    case 'weekly':
+      return {
+        ...baseRecurrence,
+        frequency,
+        weekdays: ['monday'],
+      }
+    case 'monthly':
+      return {
+        ...baseRecurrence,
+        frequency: 'monthly',
+        monthlyAnchorDate: startsOn,
+      }
+    case 'yearly':
+      return {
+        ...baseRecurrence,
+        frequency: 'yearly',
+        yearlyAnchorDate: startsOn,
+      }
   }
 }
 
