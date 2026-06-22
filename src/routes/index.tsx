@@ -67,6 +67,7 @@ import {
 } from '@/components/ui/field'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { useTheme } from '@/components/theme-provider'
 import type { DefaultValuesForDiscriminatedUnion } from '@/lib/utils'
 import {
   sampleApiBill,
@@ -87,11 +88,17 @@ const recurrenceEndStrategies = [
 ] as const
 const accordionSections = ['create', 'edit'] as const
 const appLocales = ['en-US', 'en-GB', 'sv-SE', 'ja-JP'] as const
+const appThemes = ['system', 'dark', 'light'] as const
 const appLocaleLabels: Record<(typeof appLocales)[number], string> = {
   'en-GB': 'English (United Kingdom)',
   'en-US': 'English (United States)',
   'ja-JP': '日本語 (日本)',
   'sv-SE': 'Svenska (Sverige)',
+}
+const appThemeLabels: Record<(typeof appThemes)[number], string> = {
+  system: 'System',
+  dark: 'Dark',
+  light: 'Light',
 }
 const weekdays = [
   'monday',
@@ -108,6 +115,7 @@ const routeSearchSchema = z.object({
 })
 
 type AppLocale = (typeof appLocales)[number]
+type AppTheme = (typeof appThemes)[number]
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -358,6 +366,7 @@ function Home() {
   const navigate = Route.useNavigate()
   const locale = search.locale
   const openSections = search.sections
+  const { setTheme, theme } = useTheme()
 
   return (
     <main
@@ -377,8 +386,8 @@ function Home() {
               fresh defaults or defaults mapped from an imaginary API bill.
             </p>
           </div>
-          <Card className="w-full md:w-72">
-            <CardContent>
+          <Card className="w-full md:w-104">
+            <CardContent className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-2 text-sm font-medium">
                 Locale
                 <NativeSelect
@@ -401,6 +410,26 @@ function Home() {
                   {appLocales.map((appLocale) => (
                     <NativeSelectOption key={appLocale} value={appLocale}>
                       {appLocaleLabels[appLocale]}
+                    </NativeSelectOption>
+                  ))}
+                </NativeSelect>
+              </label>
+              <label className="flex flex-col gap-2 text-sm font-medium">
+                Theme
+                <NativeSelect
+                  className="w-full"
+                  value={theme}
+                  onChange={(event) => {
+                    const nextTheme = event.currentTarget.value
+
+                    if (isAppTheme(nextTheme)) {
+                      setTheme(nextTheme)
+                    }
+                  }}
+                >
+                  {appThemes.map((appTheme) => (
+                    <NativeSelectOption key={appTheme} value={appTheme}>
+                      {appThemeLabels[appTheme]}
                     </NativeSelectOption>
                   ))}
                 </NativeSelect>
@@ -1235,6 +1264,10 @@ function getDateInputValue(date: Date) {
 
 function isAppLocale(value: string): value is AppLocale {
   return appLocales.includes(value as AppLocale)
+}
+
+function isAppTheme(value: string): value is AppTheme {
+  return appThemes.includes(value as AppTheme)
 }
 
 function titleCase(value: string) {
