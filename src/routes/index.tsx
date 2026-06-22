@@ -885,20 +885,7 @@ function LineItemsSection({
   const { fields, append, move, remove } = useFieldArray(field('lineItems'))
   const currency = useWatch(field('currency'))
   const { errors } = useFormState({ control: field('lineItems').control })
-  const lineItemsError = errors.lineItems
-  const lineItemsRootError =
-    lineItemsError && typeof lineItemsError === 'object' && 'root' in lineItemsError
-      ? lineItemsError.root
-      : undefined
-  const lineItemsErrorMessage =
-    lineItemsRootError &&
-    typeof lineItemsRootError === 'object' &&
-    'message' in lineItemsRootError &&
-    typeof lineItemsRootError.message === 'string'
-      ? lineItemsRootError.message
-      : Array.isArray(lineItemsError)
-        ? undefined
-        : lineItemsError?.message
+  const lineItemsErrorMessage = errors.lineItems?.root?.message
   const lineItemIds = useMemo(
     () => fields.map((lineItemField) => lineItemField.id),
     [fields],
